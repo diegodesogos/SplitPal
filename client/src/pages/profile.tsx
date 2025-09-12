@@ -19,7 +19,7 @@ export default function Profile() {
     enabled: !!currentUserId,
   });
 
-  const { data: groups = [] } = useQuery({
+  const { data: groups = [] } = useQuery<any[]>({
     queryKey: ["/api/users", currentUserId, "groups"],
   });
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppContext } from "@/context/app-context";
 import { Button } from "@/components/ui/button";
@@ -48,16 +48,6 @@ export default function AddExpense() {
   const { data: group } = useQuery<Group>({
     queryKey: ["/api/groups", activeGroupId],
     enabled: !!activeGroupId,
-    onSuccess: (data) => {
-      if (data && splits.length === 0) {
-        const initialSplits = data.participants.map(userId => ({
-          userId,
-          amount: 0,
-          selected: true,
-        }));
-        setSplits(initialSplits);
-      }
-    },
   });
 
   const expenseMutation = useMutation({
@@ -183,14 +173,16 @@ export default function AddExpense() {
   };
 
   // Initialize splits when group data is loaded
-  if (group && splits.length === 0) {
-    const initialSplits = group.participants.map(userId => ({
-      userId,
-      amount: 0,
-      selected: true,
-    }));
-    setSplits(initialSplits);
-  }
+  useEffect(() => {
+    if (group && splits.length === 0) {
+      const initialSplits = group.participants.map(userId => ({
+        userId,
+        amount: 0,
+        selected: true,
+      }));
+      setSplits(initialSplits);
+    }
+  }, [group, splits.length]);
 
   return (
     <div className="mx-4 mt-4" data-testid="add-expense-view">

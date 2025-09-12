@@ -44,7 +44,7 @@ export default function Groups() {
     queryKey: ["/api/users", currentUserId, "groups"],
   });
 
-  const { data: expenses = [] } = useQuery({
+  const { data: expenses = [] } = useQuery<any[]>({
     queryKey: ["/api/groups", activeGroupId, "expenses"],
     enabled: !!activeGroupId,
   });
@@ -66,9 +66,8 @@ export default function Groups() {
       setParticipantEmails("");
       
       // Switch to the new group
-      const newGroup = response.json();
-      if (newGroup.id) {
-        setActiveGroupId(newGroup.id);
+      if (response && typeof response === 'object' && 'id' in response) {
+        setActiveGroupId(response.id as string);
       }
     },
     onError: () => {

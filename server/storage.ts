@@ -103,6 +103,8 @@ export class MemStorage implements IStorage {
     const group: Group = { 
       ...insertGroup, 
       id,
+      description: insertGroup.description || null,
+      participants: (insertGroup.participants || []) as string[],
       createdAt: new Date()
     };
     this.groups.set(id, group);
@@ -134,7 +136,12 @@ export class MemStorage implements IStorage {
 
   async createExpense(insertExpense: InsertExpense): Promise<Expense> {
     const id = randomUUID();
-    const expense: Expense = { ...insertExpense, id };
+    const expense: Expense = { 
+      ...insertExpense, 
+      id,
+      date: insertExpense.date || new Date(),
+      splits: (insertExpense.splits || []) as { userId: string; amount: number }[]
+    };
     this.expenses.set(id, expense);
     return expense;
   }
@@ -165,6 +172,7 @@ export class MemStorage implements IStorage {
     const settlement: Settlement = { 
       ...insertSettlement, 
       id,
+      notes: insertSettlement.notes || null,
       date: new Date()
     };
     this.settlements.set(id, settlement);
