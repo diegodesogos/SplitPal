@@ -52,6 +52,9 @@ export const insertGroupSchema = createInsertSchema(groups).omit({
 
 export const insertExpenseSchema = createInsertSchema(expenses).omit({
   id: true,
+}).extend({
+  // Coerce string dates to Date objects for JSON API compatibility
+  date: z.coerce.date(),
 });
 
 export const insertSettlementSchema = createInsertSchema(settlements).omit({

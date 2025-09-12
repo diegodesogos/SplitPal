@@ -103,23 +103,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/expenses", async (req, res) => {
     try {
+      console.log("Expense creation request body:", JSON.stringify(req.body, null, 2));
       const validated = insertExpenseSchema.parse(req.body);
+      console.log("Validated expense data:", JSON.stringify(validated, null, 2));
       const expense = await storage.createExpense(validated);
       res.status(201).json(expense);
     } catch (error) {
-      res.status(400).json({ message: "Invalid expense data" });
+      console.error("Expense validation error:", error);
+      res.status(400).json({ message: "Invalid expense data", error: error.message });
     }
   });
 
   app.put("/api/expenses/:id", async (req, res) => {
     try {
+      console.log("Expense update request:", req.params.id, JSON.stringify(req.body, null, 2));
       const expense = await storage.updateExpense(req.params.id, req.body);
       if (!expense) {
+        console.log("Expense not found:", req.params.id);
         return res.status(404).json({ message: "Expense not found" });
       }
+      console.log("Expense updated successfully:", JSON.stringify(expense, null, 2));
       res.json(expense);
     } catch (error) {
-      res.status(400).json({ message: "Failed to update expense" });
+      console.error("Expense update error:", error);
+      res.status(400).json({ message: "Failed to update expense", error: error.message });
     }
   });
 

@@ -1,9 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppContext } from "@/context/app-context";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Filter, ArrowUpDown, Utensils, Car, Bed, ShoppingBag, Gamepad2, MoreHorizontal } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { Filter, ArrowUpDown, Utensils, Car, Bed, ShoppingBag, Gamepad2, MoreHorizontal, Trash2 } from "lucide-react";
 
 interface User {
   id: string;
@@ -23,6 +30,12 @@ interface Expense {
 
 export default function Expenses() {
   const { activeGroupId, currentUserId } = useAppContext();
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [editDescription, setEditDescription] = useState("");
+  const [editAmount, setEditAmount] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { data: users = [] } = useQuery<User[]>({
     queryKey: ["/api/users"],
@@ -54,6 +67,89 @@ export default function Expenses() {
       case "shopping": return "bg-green-100 text-green-800";
       case "entertainment": return "bg-pink-100 text-pink-800";
       default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const updateExpenseMutation = useMutation({
+    mutationFn: async (data: { id: string; description: string; amount: string; category: string }) => {
+      return apiRequest(`/api/expenses/${data.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          description: data.description,
+          amount: data.amount,
+          category: data.category,
+        }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "balances"] });
+      toast({
+        title: "Success",
+        description: "Expense updated successfully!",
+      });
+      setEditingExpense(null);
+    },
+    onError: () => {
+      toast({
+        title: "Error", 
+        description: "Failed to update expense. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteExpenseMutation = useMutation({
+    mutationFn: async (expenseId: string) => {
+      return apiRequest(`/api/expenses/${expenseId}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "balances"] });
+      toast({
+        title: "Success",
+        description: "Expense deleted successfully!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete expense. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEditExpense = (expense: Expense) => {
+    setEditingExpense(expense);
+    setEditDescription(expense.description);
+    setEditAmount(expense.amount);
+    setEditCategory(expense.category);
+  };
+
+  const handleUpdateExpense = () => {
+    if (!editingExpense || !editDescription || !editAmount || !editCategory) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    updateExpenseMutation.mutate({
+      id: editingExpense.id,
+      description: editDescription,
+      amount: editAmount,
+      category: editCategory,
+    });
+  };
+
+  const handleDeleteExpense = (expenseId: string) => {
+    if (confirm("Are you sure you want to delete this expense?")) {
+      deleteExpenseMutation.mutate(expenseId);
     }
   };
 
@@ -125,14 +221,26 @@ export default function Expenses() {
                           You owe ${yourShare.toFixed(2)}
                         </div>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="mt-2 text-primary text-sm h-auto p-0"
-                        data-testid={`button-edit-expense-${expense.id}`}
-                      >
-                        Edit
-                      </Button>
+                      <div className="flex space-x-2 mt-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-primary text-sm h-auto p-0"
+                          onClick={() => handleEditExpense(expense)}
+                          data-testid={`button-edit-expense-${expense.id}`}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive text-sm h-auto p-0"
+                          onClick={() => handleDeleteExpense(expense.id)}
+                          data-testid={`button-delete-expense-${expense.id}`}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -141,6 +249,69 @@ export default function Expenses() {
           })
         )}
       </div>
+
+      {/* Edit Expense Dialog */}
+      <Dialog open={!!editingExpense} onOpenChange={() => setEditingExpense(null)}>
+        <DialogContent data-testid="dialog-edit-expense">
+          <DialogHeader>
+            <DialogTitle>Edit Expense</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-description">Description *</Label>
+              <Input
+                id="edit-description"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                data-testid="input-expense-description"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-amount">Amount *</Label>
+              <Input
+                id="edit-amount"
+                type="number"
+                step="0.01"
+                value={editAmount}
+                onChange={(e) => setEditAmount(e.target.value)}
+                data-testid="input-expense-amount"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-category">Category *</Label>
+              <Select value={editCategory} onValueChange={setEditCategory}>
+                <SelectTrigger data-testid="select-category">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Food & Dining">Food & Dining</SelectItem>
+                  <SelectItem value="Transportation">Transportation</SelectItem>
+                  <SelectItem value="Accommodation">Accommodation</SelectItem>
+                  <SelectItem value="Entertainment">Entertainment</SelectItem>
+                  <SelectItem value="Shopping">Shopping</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex space-x-2 pt-4">
+              <Button
+                onClick={handleUpdateExpense}
+                disabled={updateExpenseMutation.isPending}
+                data-testid="button-save-expense"
+              >
+                {updateExpenseMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setEditingExpense(null)}
+                data-testid="button-cancel-edit"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
