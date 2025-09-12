@@ -59,7 +59,7 @@ export class MemStorage implements IStorage {
 
     participants.forEach(user => this.users.set(user.id, user));
 
-    // Create a demo group
+    // Create demo groups
     const demoGroup: Group = {
       id: "demo-group",
       name: "Weekend Trip",
@@ -69,6 +69,16 @@ export class MemStorage implements IStorage {
       createdAt: new Date()
     };
     this.groups.set(demoGroup.id, demoGroup);
+
+    const workGroup: Group = {
+      id: "work-group",
+      name: "Office Lunch",
+      description: "Team lunch expenses",
+      createdBy: demoUser.id,
+      participants: [demoUser.id, "user-1", "user-2"],
+      createdAt: new Date()
+    };
+    this.groups.set(workGroup.id, workGroup);
   }
 
   async getUser(id: string): Promise<User | undefined> {
