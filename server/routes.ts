@@ -109,9 +109,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const expense = await storage.createExpense(validated);
       res.status(201).json(expense);
     } catch (error) {
-      console.error("Expense validation error:", error);
-      res.status(400).json({ message: "Invalid expense data", error: error.message });
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("Expense creation error:", error);
+      res.status(400).json({ error: message });
     }
+
   });
 
   app.put("/api/expenses/:id", async (req, res) => {
@@ -125,8 +127,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Expense updated successfully:", JSON.stringify(expense, null, 2));
       res.json(expense);
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       console.error("Expense update error:", error);
-      res.status(400).json({ message: "Failed to update expense", error: error.message });
+      res.status(400).json({ error: message });
     }
   });
 
