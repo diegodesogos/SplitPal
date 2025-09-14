@@ -72,13 +72,10 @@ export default function Expenses() {
 
   const updateExpenseMutation = useMutation({
     mutationFn: async (data: { id: string; description: string; amount: string; category: string }) => {
-      return apiRequest(`/api/expenses/${data.id}`, {
-        method: "PUT",
-        body: JSON.stringify({
-          description: data.description,
-          amount: data.amount,
-          category: data.category,
-        }),
+      return apiRequest("PUT", `/api/expenses/${data.id}`, {
+        description: data.description,
+        amount: data.amount,
+        category: data.category,
       });
     },
     onSuccess: () => {
@@ -101,9 +98,7 @@ export default function Expenses() {
 
   const deleteExpenseMutation = useMutation({
     mutationFn: async (expenseId: string) => {
-      return apiRequest(`/api/expenses/${expenseId}`, {
-        method: "DELETE",
-      });
+      return apiRequest("DELETE", `/api/expenses/${expenseId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "expenses"] });
