@@ -16,12 +16,8 @@
       "dest": "server/index.ts"
     },
     {
-      "src": "/(.)\.(js|css|png|jpg|jpeg|gif|svg|ico|webp|woff2?|ttf|eot|json)$",
-      "dest": "dist/client/$1.$2"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "dist/client/index.html"
+      "src": "/(.)",
+      "dest": "/dist/client/index.html"
     }
   ]
 }
