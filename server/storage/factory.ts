@@ -32,10 +32,12 @@ export class StorageFactory {
         );
       
       case 'google-sheets':
-        return new GoogleSheetsStorage(
-          storageConfig.googleSheetsId!,
-          storageConfig.googleCredentials!
-        );
+        return new GoogleSheetsStorage({
+          rootSheetsId: storageConfig.googleSheetsId!,
+          credentials: storageConfig.googleCredentials!,
+          serviceAccountEmail: storageConfig.googleServiceAccountEmail,
+          privateKey: storageConfig.googlePrivateKey,
+        });
       
       default:
         throw new Error(`Unsupported storage type: ${storageConfig.type}`);
@@ -115,14 +117,27 @@ export class StorageFactory {
         };
       
       case 'google-sheets':
-        if (!env.GOOGLE_SHEETS_ID || !env.GOOGLE_CREDENTIALS) {
-          throw new Error('GOOGLE_SHEETS_ID and GOOGLE_CREDENTIALS environment variables are required for Google Sheets storage');
+        if (!env.GOOGLE_SHEETS_ID) {
+          throw new Error('GOOGLE_SHEETS_ID environment variable is required for Google Sheets storage');
         }
-        return {
-          type: 'google-sheets',
-          googleSheetsId: env.GOOGLE_SHEETS_ID,
-          googleCredentials: env.GOOGLE_CREDENTIALS
-        };
+        
+        // Support both service account and JSON credentials authentication
+        if (env.GOOGLE_SERVICE_ACCOUNT_EMAIL && env.GOOGLE_PRIVATE_KEY) {
+          return {
+            type: 'google-sheets',
+            googleSheetsId: env.GOOGLE_SHEETS_ID,
+            googleServiceAccountEmail: env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+            googlePrivateKey: env.GOOGLE_PRIVATE_KEY
+          };
+        } else if (env.GOOGLE_CREDENTIALS) {
+          return {
+            type: 'google-sheets',
+            googleSheetsId: env.GOOGLE_SHEETS_ID,
+            googleCredentials: env.GOOGLE_CREDENTIALS
+          };
+        } else {
+          throw new Error('Either GOOGLE_CREDENTIALS or GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_PRIVATE_KEY environment variables are required for Google Sheets storage');
+        }
       
       default:
         throw new Error(`Unsupported storage type: ${type}`);

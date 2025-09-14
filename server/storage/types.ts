@@ -7,6 +7,8 @@ export interface StorageConfig {
   supabaseKey?: string;
   googleSheetsId?: string;
   googleCredentials?: string;
+  googleServiceAccountEmail?: string;
+  googlePrivateKey?: string;
 }
 
 export interface StorageEnvironment {
@@ -18,4 +20,6 @@ export interface StorageEnvironment {
   SUPABASE_ANON_KEY?: string;
   GOOGLE_SHEETS_ID?: string;
   GOOGLE_CREDENTIALS?: string;
+  GOOGLE_SERVICE_ACCOUNT_EMAIL?: string;
+  GOOGLE_PRIVATE_KEY?: string;
 }
