@@ -1,21 +1,29 @@
 {
   "version": 2,
-  "functions": {
-    "dist/server/index.js": {
-      "memory": 1024
+  "builds": [
+    {
+      "src": "client/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "../dist/client"
+      }
+    },
+    {
+      "src": "server/index.ts",
+      "use": "@vercel/node"
     }
-  },
+  ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "dist/server/index.js"
+      "dest": "/server/index.ts"
     },
     {
       "handle": "filesystem"
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/dist/client/index.html"
     }
   ]
 }

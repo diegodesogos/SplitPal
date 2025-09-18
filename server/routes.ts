@@ -1,15 +1,15 @@
 import type { Express } from "express";
-import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage } from "./storage.js";
 import { insertGroupSchema, insertExpenseSchema, insertSettlementSchema } from "@shared/schema";
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export function registerRoutes(app: Express): void {
   // User routes
   app.get("/api/users", async (_req, res) => {
     try {
       const users = await storage.getAllUsers();
       res.json(users);
     } catch (error) {
+      console.error("Error fetching users:", error);
       res.status(500).json({ message: "Failed to fetch users" });
     }
   });
@@ -22,6 +22,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(user);
     } catch (error) {
+      console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
     }
   });
@@ -32,6 +33,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const groups = await storage.getAllGroups();
       res.json(groups);
     } catch (error) {
+      console.error("Error fetching groups:", error);
       res.status(500).json({ message: "Failed to fetch groups" });
     }
   });
@@ -44,6 +46,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(group);
     } catch (error) {
+      console.error("Error fetching group:", error);
       res.status(500).json({ message: "Failed to fetch group" });
     }
   });
@@ -54,7 +57,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const group = await storage.createGroup(validated);
       res.status(201).json(group);
     } catch (error) {
-      res.status(400).json({ message: "Invalid group data" });
+      console.error("Error creating group:", error);
+      const message = error instanceof Error ? error.message : "Invalid group data";
+      res.status(400).json({ message });
     }
   });
 
@@ -66,6 +71,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(group);
     } catch (error) {
+      console.error("Error updating group:", error);
       res.status(400).json({ message: "Failed to update group" });
     }
   });
@@ -75,6 +81,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const groups = await storage.getUserGroups(req.params.userId);
       res.json(groups);
     } catch (error) {
+      console.error("Error fetching user groups:", error);
       res.status(500).json({ message: "Failed to fetch user groups" });
     }
   });
@@ -85,6 +92,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const expenses = await storage.getGroupExpenses(req.params.groupId);
       res.json(expenses);
     } catch (error) {
+      console.error("Error fetching expenses:", error);
       res.status(500).json({ message: "Failed to fetch expenses" });
     }
   });
@@ -97,39 +105,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(expense);
     } catch (error) {
+      console.error("Error fetching expense:", error);
       res.status(500).json({ message: "Failed to fetch expense" });
     }
   });
 
   app.post("/api/expenses", async (req, res) => {
     try {
-      console.log("Expense creation request body:", JSON.stringify(req.body, null, 2));
       const validated = insertExpenseSchema.parse(req.body);
-      console.log("Validated expense data:", JSON.stringify(validated, null, 2));
       const expense = await storage.createExpense(validated);
       res.status(201).json(expense);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error("Expense creation error:", error);
-      res.status(400).json({ error: message });
+      console.error("Error creating expense:", error);
+      const message = error instanceof Error ? error.message : "Invalid expense data";
+      res.status(400).json({ message });
     }
-
   });
 
   app.put("/api/expenses/:id", async (req, res) => {
     try {
-      console.log("Expense update request:", req.params.id, JSON.stringify(req.body, null, 2));
       const expense = await storage.updateExpense(req.params.id, req.body);
       if (!expense) {
-        console.log("Expense not found:", req.params.id);
         return res.status(404).json({ message: "Expense not found" });
       }
-      console.log("Expense updated successfully:", JSON.stringify(expense, null, 2));
       res.json(expense);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error("Expense update error:", error);
-      res.status(400).json({ error: message });
+      console.error("Error updating expense:", error);
+      const message = error instanceof Error ? error.message : "Failed to update expense";
+      res.status(400).json({ message });
     }
   });
 
@@ -141,6 +144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.status(204).send();
     } catch (error) {
+      console.error("Error deleting expense:", error);
       res.status(500).json({ message: "Failed to delete expense" });
     }
   });
@@ -151,6 +155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const settlements = await storage.getGroupSettlements(req.params.groupId);
       res.json(settlements);
     } catch (error) {
+      console.error("Error fetching settlements:", error);
       res.status(500).json({ message: "Failed to fetch settlements" });
     }
   });
@@ -161,16 +166,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const settlement = await storage.createSettlement(validated);
       res.status(201).json(settlement);
     } catch (error) {
-      res.status(400).json({ message: "Invalid settlement data" });
+      console.error("Error creating settlement:", error);
+      const message = error instanceof Error ? error.message : "Invalid settlement data";
+      res.status(400).json({ message });
     }
   });
 
   // Balance calculation endpoint
   app.get("/api/groups/:groupId/balances", async (req, res) => {
     try {
-      const expenses = await storage.getGroupExpenses(req.params.groupId);
-      const settlements = await storage.getGroupSettlements(req.params.groupId);
-      const group = await storage.getGroup(req.params.groupId);
+      const [expenses, settlements, group] = await Promise.all([
+        storage.getGroupExpenses(req.params.groupId),
+        storage.getGroupSettlements(req.params.groupId),
+        storage.getGroup(req.params.groupId)
+      ]);
       
       if (!group) {
         return res.status(404).json({ message: "Group not found" });
@@ -206,10 +215,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(balances);
     } catch (error) {
+      console.error("Error calculating balances:", error);
       res.status(500).json({ message: "Failed to calculate balances" });
     }
   });
-
-  const httpServer = createServer(app);
-  return httpServer;
 }
