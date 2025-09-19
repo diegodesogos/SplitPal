@@ -3,6 +3,9 @@ import { registerRoutes } from "./routes.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
+const BACKEND_PORT = Number(process.env.BACKEND_PORT || process.env.SERVER_PORT || 5001);
+const VITE_PORT = Number(process.env.VITE_PORT || process.env.PORT || 3001);
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
@@ -48,7 +51,7 @@ if (process.env.NODE_ENV === "production") {
 
 // Only start server if not in Vercel (Vercel handles this automatically)
 if (process.env.VERCEL !== "1") {
-  const port = parseInt(process.env.PORT || "5000", 10);
+  const port = parseInt(process.env.PORT || BACKEND_PORT.toString(), 10);
   app.listen(port, "0.0.0.0", () => {
     console.log(`Server running on port ${port}`);
     console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
