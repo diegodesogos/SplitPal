@@ -2,24 +2,21 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes.js";
 import path from "path";
 import { fileURLToPath } from "url";
-import serverless from "serverless-http";
-
-const BACKEND_PORT = Number(process.env.BACKEND_PORT || process.env.SERVER_PORT || 5001);
-const VITE_PORT = Number(process.env.VITE_PORT || process.env.PORT || 3001);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
-// Basic middleware
+// --- Middleware ---
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Simple logging middleware (only for development)
+// Simple logging middleware for development
 if (process.env.NODE_ENV !== "production") {
   app.use((req, res, next) => {
     const start = Date.now();
     res.on("finish", () => {
       const duration = Date.now() - start;
+      // Log only API routes to keep the console clean
       if (req.path.startsWith("/api")) {
         console.log(`${req.method} ${req.path} ${res.statusCode} in ${duration}ms`);
       }
@@ -28,10 +25,11 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
-// Register API routes
+// --- API Routes ---
+// All your routes from ./routes.js will be prefixed with /api
 registerRoutes(app);
 
-// Error handling middleware
+// --- Error Handling ---
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   console.error("Server error:", err);
   const status = err.status || err.statusCode || 500;
@@ -39,25 +37,26 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   res.status(status).json({ message });
 });
 
-// Serve static files in production
-if (process.env.NODE_ENV === "production") {
+// --- Local Development Server ---
+// This block is crucial. It only runs when you start the server locally.
+// Vercel sets the VERCEL environment variable to "1", so this block is ignored during deployment.
+if (process.env.VERCEL !== "1") {
+  const BACKEND_PORT = Number(process.env.BACKEND_PORT || 5001);
+  
+  // For local dev, we need Express to serve the static front-end files
   const clientPath = path.resolve(__dirname, "../client");
   app.use(express.static(clientPath));
   
-  // Catch-all handler: send back React's index.html file for client-side routing
+  // Local catch-all: if a route is not an API route, serve the front-end app
   app.get("*", (_req, res) => {
     res.sendFile(path.resolve(clientPath, "index.html"));
   });
-}
 
-// Only start server if not in Vercel (Vercel handles this automatically)
-if (process.env.VERCEL !== "1") {
-  const port = parseInt(process.env.PORT || BACKEND_PORT.toString(), 10);
-  app.listen(port, "0.0.0.0", () => {
-    console.log(`Server running on port ${port}`);
-    console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+  app.listen(BACKEND_PORT, () => {
+    console.log(`🚀 Server is running locally at http://localhost:${BACKEND_PORT}`);
   });
 }
 
-// --- EXPORT FOR VERCEL ---
-export const handler = serverless(app);
+// --- Vercel Export ---
+// This is the single export Vercel needs to wrap your Express app in a serverless function.
+export default app;
