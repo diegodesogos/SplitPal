@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import serverless from "serverless-http";
 
 const BACKEND_PORT = Number(process.env.BACKEND_PORT || process.env.SERVER_PORT || 5001);
 const VITE_PORT = Number(process.env.VITE_PORT || process.env.PORT || 3001);
@@ -58,5 +59,5 @@ if (process.env.VERCEL !== "1") {
   });
 }
 
-// Export the app for Vercel
-export default app;
+// --- EXPORT FOR VERCEL ---
+export const handler = serverless(app);
