@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { storage } from "./storage.js";
-import { insertGroupSchema, insertExpenseSchema, insertSettlementSchema } from "@shared/schema";
+import { insertGroupSchema, insertExpenseSchema, insertSettlementSchema } from "@shared/schema.js";
 
 export function registerRoutes(app: Express): void {
   // User routes
@@ -189,25 +189,25 @@ export function registerRoutes(app: Express): void {
       const balances: Record<string, number> = {};
       
       // Initialize balances for all participants
-      group.participants.forEach(userId => {
+      group.participants.forEach((userId: string | number) => {
         balances[userId] = 0;
       });
 
       // Process expenses
-      expenses.forEach(expense => {
+      expenses.forEach((expense: { amount: string; paidBy: string | number; splits: any[]; }) => {
         const amount = parseFloat(expense.amount);
         
         // The person who paid gets credited
         balances[expense.paidBy] += amount;
         
         // Everyone who owes gets debited based on their split
-        expense.splits.forEach(split => {
+        expense.splits.forEach((split: { userId: string | number; amount: number; }) => {
           balances[split.userId] -= split.amount;
         });
       });
 
       // Process settlements
-      settlements.forEach(settlement => {
+      settlements.forEach((settlement: { amount: string; fromUserId: string | number; toUserId: string | number; }) => {
         const amount = parseFloat(settlement.amount);
         balances[settlement.fromUserId] += amount;
         balances[settlement.toUserId] -= amount;
