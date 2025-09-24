@@ -5,12 +5,14 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "esModuleInterop": true,
+    "jsx": "react-jsx",
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "strict": true,
     "noImplicitAny": true,
     "baseUrl": ".",
     "paths": {
+      "@/*": ["client/src/*"],
       "@shared/*": ["shared/*"]
     }
   },
