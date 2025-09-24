@@ -93,6 +93,8 @@ This is a clean, deployment-agnostic full-stack application with the following s
 │   ├── routes.ts       # API routes
 │   └── storage/        # Data layer
 ├── shared/             # Shared types/schemas
+├── api/                # React frontend
+│   ├── index.js        # Cloud deployment entry point for backend (specifically for Vercel's automatic conversion to Functions)
 ├── dist/               # Built files (generated)
 │   ├── client/         # Built React app
 │   └── server/         # Built Express app
