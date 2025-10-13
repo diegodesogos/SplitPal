@@ -4,9 +4,16 @@ import { DatabaseStorage } from "./database-storage";
 import { SupabaseStorage } from "./supabase-storage";
 import { GoogleSheetsStorage } from "./google-sheets-storage";
 import { StorageConfig, StorageEnvironment, StorageType } from "./types";
+import session from 'express-session';
+import ConnectPgSimple from 'connect-pg-simple';
+import { Pool } from 'pg';
+import MemoryStore from 'memorystore';
+
+const MemoryStoreFactory = MemoryStore(session);
 
 export class StorageFactory {
   private static instance: IStorage | null = null;
+  private static sessionStore: session.Store | null = null;
 
   static getStorage(): IStorage {
     if (!this.instance) {
@@ -159,7 +166,45 @@ export class StorageFactory {
     }
   }
 
+  static getSessionStore(): session.Store {
+    if (!this.sessionStore) {
+      const config = this.getConfigFromEnvironment();
+      this.sessionStore = this.createSessionStore(config);
+    }
+    return this.sessionStore;
+  }
+
+  private static createSessionStore(config: StorageConfig): session.Store {
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+
+    // For database-backed storage types in production, use persistent session store
+    if (isProduction && (config.type === 'database' || config.type === 'supabase')) {
+      const databaseUrl = config.databaseUrl || process.env.DATABASE_URL;
+      
+      if (databaseUrl) {
+        console.info('Using PostgreSQL for session storage');
+        const pgPool = new Pool({ connectionString: databaseUrl });
+        const PgSession = ConnectPgSimple(session);
+        return new PgSession({ 
+          pool: pgPool,
+          tableName: config.sessionTable || 'user_sessions'
+        });
+      }
+    }
+    
+    // For development or non-database storage types, use memory store
+    console.info('Using in-memory session storage');
+    if (isProduction) {
+      console.warn('WARNING: Using non-persistent session store in production environment');
+    }
+    
+    return new MemoryStoreFactory({
+      checkPeriod: 86400000 // Prune expired entries every 24h
+    });
+  }
+
   static reset(): void {
     this.instance = null;
+    this.sessionStore = null;
   }
 }

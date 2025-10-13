@@ -55,7 +55,7 @@ IMPORTANT NOTE FOR AI AGENTS/Humans: All the following tasks are TBD. This docum
 
 ### Task 1: Backend - Core Setup and Database Changes
 
-1.  **Install Dependencies:**
+1.  **DONE Install Dependencies:**  
     * Add the necessary packages for authentication and session management:
         ```bash
         npm install passport passport-google-oauth20 express-session cookie-parser connect-pg-simple
@@ -66,7 +66,7 @@ IMPORTANT NOTE FOR AI AGENTS/Humans: All the following tasks are TBD. This docum
         npm install @casl/ability
         ```
 
-2.  **Update Database Schema:**
+2.  **DONE Update Database Schema:**
     * Modify the `users` table in `shared/schema.ts` to include fields for authentication and roles.
         ```typescript
         // shared/schema.ts
@@ -86,7 +86,7 @@ IMPORTANT NOTE FOR AI AGENTS/Humans: All the following tasks are TBD. This docum
         ```
     * Run `npm run db:push` to apply the changes to your database schema.
 
-3.  **Refactor `StorageFactory` to Provide Session Store:**
+3.  **DONE Refactor `StorageFactory` to Provide Session Store:**
     * Centralize session store selection within `server/storage/factory.ts` to avoid logic duplication. This new method will automatically provide a persistent store for production/Vercel and a memory store for local development.
 
         ```typescript
@@ -131,7 +131,7 @@ IMPORTANT NOTE FOR AI AGENTS/Humans: All the following tasks are TBD. This docum
         }
         ```
 
-4.  **Simplify Session Configuration in `server/index.ts`:**
+4.  **DONE Simplify Session Configuration in `server/index.ts`:**
     * Update `server/index.ts` to be clean and simple, delegating the store selection to the factory.
         ```typescript
         // server/index.ts

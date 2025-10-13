@@ -9,6 +9,8 @@ export interface StorageConfig {
   googleCredentials?: string;
   googleServiceAccountEmail?: string;
   googlePrivateKey?: string;
+  sessionSecret?: string;
+  sessionTable?: string;
 }
 
 export interface StorageEnvironment {
@@ -22,4 +24,6 @@ export interface StorageEnvironment {
   GOOGLE_CREDENTIALS?: string;
   GOOGLE_SERVICE_ACCOUNT_EMAIL?: string;
   GOOGLE_PRIVATE_KEY?: string;
+  SESSION_SECRET?: string;
+  SESSION_TABLE?: string;
 }
