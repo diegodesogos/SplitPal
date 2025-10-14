@@ -15,9 +15,10 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
-  // New authentication fields
-  provider: text("provider"), // 'google', etc.
-  providerId: text("provider_id"), // ID from the provider
+  // Authentication fields
+  hashedPassword: text("hashed_password"), // For password auth
+  provider: text("provider"), // 'password', 'google', etc.
+  providerId: text("provider_id"), // ID from the provider (for OAuth)
   role: roleEnum('role').default('member'),
   lastLoginAt: timestamp("last_login_at"),
 });
@@ -53,14 +54,34 @@ export const settlements = pgTable("settlements", {
   date: timestamp("date").defaultNow(),
 });
 
-// Update insert schema for users to make authentication fields optional
+// Shared user fields
+const userBaseSchema = z.object({
+  username: z.string().min(3),
+  email: z.string().email(),
+  name: z.string().min(1),
+});
+
+// Schema for password-based registration
+export const registerUserSchema = userBaseSchema.extend({
+  password: z.string().min(8),
+});
+
+// Schema for password-based login
+export const loginUserSchema = z.object({
+  username: z.string(),
+  password: z.string(),
+});
+
+// Schema for creating/updating users in database
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   lastLoginAt: true,
+  hashedPassword: true,
 }).extend({
   provider: z.string().optional(),
   providerId: z.string().optional(),
   role: z.enum(ROLES).default('member'),
+  hashedPassword: z.string().optional(),
 });
 
 export const insertGroupSchema = createInsertSchema(groups).omit({

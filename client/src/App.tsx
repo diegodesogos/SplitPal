@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -10,36 +10,103 @@ import AddExpense from "@/pages/add-expense";
 import Groups from "@/pages/groups";
 import Profile from "@/pages/profile";
 import NotFound from "@/pages/not-found";
+import { Login } from "@/pages/login";
+import { Register } from "@/pages/register";
 import BottomNavigation from "@/components/bottom-navigation";
 import Header from "@/components/header";
 import { AppContext } from "@/context/app-context";
+import { AuthProvider } from "@/context/auth-provider";
+import { useAuth } from "@/context/auth-context";
+
+// Auth-aware route component that redirects to login if not authenticated
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+};
 
 function App() {
   const [activeGroupId, setActiveGroupId] = useState("demo-group");
-  const currentUserId = "demo-user"; // In a real app, this would come from authentication
+  const { user } = useAuth();
+  const currentUserId = user?.id || ""; // Get user ID from auth context
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AppContext.Provider value={{ activeGroupId, setActiveGroupId, currentUserId }}>
-          <div className="max-w-md mx-auto bg-background shadow-2xl min-h-screen relative">
-            <Header />
-            <main className="pb-20">
-              <Switch>
-                <Route path="/" component={Dashboard} />
-                <Route path="/expenses" component={Expenses} />
-                <Route path="/add-expense" component={AddExpense} />
-                <Route path="/groups" component={Groups} />
-                <Route path="/profile" component={Profile} />
-                <Route component={NotFound} />
-              </Switch>
-            </main>
-            <BottomNavigation />
-          </div>
-          <Toaster />
-        </AppContext.Provider>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <AuthProvider>
+            <AppContext.Provider value={{ activeGroupId, setActiveGroupId, currentUserId }}>
+              <div className="max-w-md mx-auto bg-background shadow-2xl min-h-screen relative">
+                <Header />
+                <main className="pb-20">
+                  <Routes>
+                    <Route
+                      path="/"
+                      element={
+                        <ProtectedRoute>
+                          <Dashboard />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/expenses"
+                      element={
+                        <ProtectedRoute>
+                          <Expenses />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/add-expense"
+                      element={
+                        <ProtectedRoute>
+                          <AddExpense />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/groups"
+                      element={
+                        <ProtectedRoute>
+                          <Groups />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/profile"
+                      element={
+                        <ProtectedRoute>
+                          <Profile />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/login"
+                      element={<Login />}
+                    />
+                    <Route
+                      path="/register"
+                      element={<Register />}
+                    />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </main>
+                <BottomNavigation />
+              </div>
+              <Toaster />
+            </AppContext.Provider>
+          </AuthProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </BrowserRouter>
   );
 }
 

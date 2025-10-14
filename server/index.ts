@@ -30,6 +30,14 @@ app.use(session({
   }
 }));
 
+// Initialize Passport and restore authentication state from session
+import passport from 'passport';
+import { configurePassport } from './auth.js';
+
+app.use(passport.initialize());
+app.use(passport.session());
+configurePassport(passport);
+
 // Simple logging middleware for development
 if (process.env.NODE_ENV !== "production") {
   app.use((req, res, next) => {

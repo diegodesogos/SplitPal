@@ -32,9 +32,25 @@ Preferred communication style: Simple, everyday language.
 - **Validation**: Zod schemas generated from Drizzle for runtime type safety
 
 ### Authentication and Authorization
-- **Current State**: Demo user system with hardcoded user ID for development
-- **Session Management**: Connect-pg-simple package included for PostgreSQL session storage when authentication is implemented
-- **Security**: CORS and credential handling configured for secure client-server communication
+- **Authentication**: Google OAuth 2.0 using Passport.js
+- **Session Management**: Express-session with dynamic storage backend (PostgreSQL in production, memory in development)
+- **Authorization**: Role-based access control (admin, member, viewer roles)
+- **Security**: CORS, secure cookies, and HTTP-only session handling
+
+#### Google OAuth Setup
+1. Create credentials in [Google Cloud Console](https://console.cloud.google.com/):
+   - Create a new project or select existing one
+   - Enable Google OAuth API
+   - Create OAuth 2.0 Client ID (Web Application type)
+   - Add authorized redirect URIs:
+     - Local: `http://localhost:5001/api/auth/google/callback`
+     - Production: `https://your-domain.com/api/auth/google/callback`
+
+2. Set environment variables:
+   ```bash
+   GOOGLE_CLIENT_ID=your_client_id
+   GOOGLE_CLIENT_SECRET=your_client_secret
+   ```
 
 ### Core Features Architecture
 - **Expense Splitting**: Flexible splitting system allowing custom amounts per user with automatic validation
