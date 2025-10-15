@@ -36,7 +36,7 @@ export interface JWTPayload {
 
 // Request with auth data
 export interface AuthenticatedRequest extends Request {
-  user?: PublicUser | User;  // Can be either full user or public user data
+  user?: User;  // Must match Express.User (which extends User)
   token?: string;
   auth?: AuthResponse;      // For OAuth responses
 }
@@ -76,7 +76,10 @@ export function verifyToken(req: AuthenticatedRequest, res: Response, next: Next
       username: '', // Will be populated by subsequent middleware
       email: '',    // Will be populated by subsequent middleware
       name: '',     // Will be populated by subsequent middleware
-      lastLoginAt: null
+      lastLoginAt: null,
+      hashedPassword: null, // Not used for JWT-authenticated users
+      provider: null,       // Not used for JWT-authenticated users
+      providerId: null      // Not used for JWT-authenticated users
     };
     req.token = token;
     
@@ -143,6 +146,10 @@ export function configurePassport(passport: PassportStatic) {
           role: user.role,
           lastLoginAt: user.lastLoginAt,
           token // Include the token for the session
+          ,
+          hashedPassword: user.hashedPassword,
+          provider: user.provider,
+          providerId: user.providerId
         };
 
         done(null, publicUser);
