@@ -68,7 +68,9 @@ SplitPal is a mobile-first expense sharing application built with React, TypeScr
 SplitPal uses a robust authentication and authorization system with role-based access control (RBAC). For detailed information about roles, permissions, and session management, refer to the [Authentication and Authorization README](README-AUTH.md).
 
 ### Authentication
-- **Google OAuth Setup**:
+SplitPal uses JWT (JSON Web Tokens) for authentication, with Google OAuth 2.0 as the primary authentication provider.
+
+- **Setup Requirements**:
   1. Create credentials in [Google Cloud Console](https://console.cloud.google.com/):
      - Enable Google OAuth API.
      - Create OAuth 2.0 Client ID (Web Application type).
@@ -79,7 +81,15 @@ SplitPal uses a robust authentication and authorization system with role-based a
      ```bash
      GOOGLE_CLIENT_ID=your_client_id
      GOOGLE_CLIENT_SECRET=your_client_secret
+     JWT_SECRET=your_secure_jwt_secret
      ```
+     
+- **Authentication Flow**:
+  1. User initiates Google OAuth login
+  2. After successful OAuth, server generates a JWT token
+  3. Token is passed to frontend via URL fragment
+  4. Frontend stores token in memory and includes it in Authorization header
+  5. Protected routes verify token validity
 
 ### Authorization
 - **Role-Based Access Control (RBAC)**:

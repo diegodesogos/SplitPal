@@ -10,6 +10,26 @@ export type Role = typeof ROLES[number];
 // Define role enum for PostgreSQL
 export const roleEnum = pgEnum('role', ROLES);
 
+// Base user type without sensitive data
+export interface BaseUser {
+  id: string;
+  username: string;
+  email: string;
+  name: string;
+  role: Role;
+  provider: string | null;
+  providerId: string | null;
+  lastLoginAt: Date | null;
+}
+
+// Full user type including sensitive data (internal use only)
+export interface User extends BaseUser {
+  hashedPassword: string | null;
+}
+
+// Public user type (safe to send to client)
+export type PublicUser = Omit<BaseUser, 'provider' | 'providerId'>;
+
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
@@ -101,7 +121,8 @@ export const insertSettlementSchema = createInsertSchema(settlements).omit({
   date: true,
 });
 
-export type User = typeof users.$inferSelect;
+// Database types
+export type DBUser = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Group = typeof groups.$inferSelect;
 export type InsertGroup = z.infer<typeof insertGroupSchema>;

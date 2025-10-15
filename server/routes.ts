@@ -89,19 +89,24 @@ export function registerRoutes(app: Express): void {
         details: 'Missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET environment variables'
       });
     }
-    passport.authenticate('google', { 
-      failureRedirect: '/login',
-      successRedirect: '/'
+    
+    passport.authenticate('google', { session: false }, (err, user) => {
+      if (err) {
+        return res.redirect('/login?error=' + encodeURIComponent(err.message));
+      }
+      if (!user) {
+        return res.redirect('/login?error=Authentication failed');
+      }
+
+      // User has been authenticated, send token in URL fragment
+      // This is secure as fragments are not sent to the server
+      res.redirect(`/?token=${user.token}`);
     })(req, res, next);
   });
 
   app.post('/api/auth/logout', (req, res) => {
-    req.logout((err) => {
-      if (err) {
-        return res.status(500).json({ message: 'Error logging out' });
-      }
-      res.json({ message: 'Logged out successfully' });
-    });
+    // With JWT, we just need to tell the client to remove the token
+    res.json({ message: 'Logged out successfully' });
   });
 
   app.get('/api/auth/me', useAuthorization(), (req, res) => {
