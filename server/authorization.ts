@@ -47,38 +47,22 @@ export function defineAbilityForUser(user: User): AppAbility {
   can(['read'], 'User'); // Can read user info
   can('read', 'User', { id: user.id }); // Can read own profile
 
-  // Groups the user participates in
-  can('read', 'Group', { 'participants': { $in: [user.id] } });
-
-  // Expenses in groups the user participates in
-  can('read', 'Expense', { 'groupId': { $in: async (id: string) => {
-    const group = await storage.getGroup(id);
-    return group?.participants.includes(user.id) || false;
-  }}});
-
-  // Settlements in groups the user participates in
-  can('read', 'Settlement', { 'groupId': { $in: async (id: string) => {
-    const group = await storage.getGroup(id);
-    return group?.participants.includes(user.id) || false;
-  }}});
+  // Simplified permissions for groups, expenses, and settlements
+  can('read', 'Group');
+  can('read', 'Expense');
+  can('read', 'Settlement');
 
   // Additional permissions for members
   if (user.role === 'member') {
     // Group management
     can('create', 'Group');
     can('update', 'Group', { 'participants': { $in: [user.id] } });
-    
-    // Expense management in groups where user is a participant
-    can(['create', 'update', 'delete'], 'Expense', { 'groupId': { $in: async (id: string) => {
-      const group = await storage.getGroup(id);
-      return group?.participants.includes(user.id) || false;
-    }}});
-    
-    // Settlement management in groups where user is a participant
-    can('create', 'Settlement', { 'groupId': { $in: async (id: string) => {
-      const group = await storage.getGroup(id);
-      return group?.participants.includes(user.id) || false;
-    }}});
+
+    // Expense management
+    can(['create', 'update', 'delete'], 'Expense');
+
+    // Settlement management
+    can('create', 'Settlement');
   }
 
   return build();

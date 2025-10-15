@@ -33,76 +33,76 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-function App() {
+function AuthenticatedApp() {
   const [activeGroupId, setActiveGroupId] = useState("demo-group");
   const { user } = useAuth();
   const currentUserId = user?.id || ""; // Get user ID from auth context
 
   return (
+    <AppContext.Provider value={{ activeGroupId, setActiveGroupId, currentUserId }}>
+      <div className="max-w-md mx-auto bg-background shadow-2xl min-h-screen relative">
+        <Header />
+        <main className="pb-20">
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/expenses"
+              element={
+                <ProtectedRoute>
+                  <Expenses />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/add-expense"
+              element={
+                <ProtectedRoute>
+                  <AddExpense />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/groups"
+              element={
+                <ProtectedRoute>
+                  <Groups />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </main>
+        <BottomNavigation />
+      </div>
+      <Toaster />
+    </AppContext.Provider>
+  );
+}
+
+function App() {
+  return (
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <AuthProvider>
-            <AppContext.Provider value={{ activeGroupId, setActiveGroupId, currentUserId }}>
-              <div className="max-w-md mx-auto bg-background shadow-2xl min-h-screen relative">
-                <Header />
-                <main className="pb-20">
-                  <Routes>
-                    <Route
-                      path="/"
-                      element={
-                        <ProtectedRoute>
-                          <Dashboard />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/expenses"
-                      element={
-                        <ProtectedRoute>
-                          <Expenses />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/add-expense"
-                      element={
-                        <ProtectedRoute>
-                          <AddExpense />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/groups"
-                      element={
-                        <ProtectedRoute>
-                          <Groups />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/profile"
-                      element={
-                        <ProtectedRoute>
-                          <Profile />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/login"
-                      element={<Login />}
-                    />
-                    <Route
-                      path="/register"
-                      element={<Register />}
-                    />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </main>
-                <BottomNavigation />
-              </div>
-              <Toaster />
-            </AppContext.Provider>
+            <AuthenticatedApp />
           </AuthProvider>
         </TooltipProvider>
       </QueryClientProvider>

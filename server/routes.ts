@@ -1,7 +1,6 @@
 import type { Express, Request, Response } from "express";
 import passport from "passport";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import { storage } from "./storage.js";
 import { 
   insertGroupSchema, 
@@ -35,21 +34,6 @@ export function registerRoutes(app: Express): void {
         role: 'member'
       });
 
-      // Create auth token
-      const token = jwt.sign(
-        { id: user.id, role: user.role },
-        process.env.JWT_SECRET || 'your-secret-key',
-        { expiresIn: '24h' }
-      );
-
-      // Set cookie with JWT
-      res.cookie('token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
-      });
-
       // Respond with user data (excluding hashed password)
       const { hashedPassword: _, ...userWithoutPassword } = user;
       res.status(201).json(userWithoutPassword);
@@ -78,22 +62,7 @@ export function registerRoutes(app: Express): void {
       // Update last login time
       await storage.updateUser(user.id, { lastLoginAt: new Date() });
 
-      // Generate JWT token
-      const token = jwt.sign(
-        { id: user.id, role: user.role }, 
-        process.env.JWT_SECRET || 'your-secret-key',
-        { expiresIn: '24h' }
-      );
-
-      // Set cookie with JWT
-      res.cookie('token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
-      });
-
-      // Send user data (excluding hashed password)
+      // Respond with user data (excluding hashed password)
       const { hashedPassword: _, ...userWithoutPassword } = user;
       res.json(userWithoutPassword);
     } catch (error) {
@@ -192,25 +161,22 @@ export function registerRoutes(app: Express): void {
     }
   });
 
-  app.get("/api/groups/:id", useAuthorization(), checkAbility('read', 'Group'), async (req, res) => {
+  app.get('/api/groups/:id', useAuthorization(), async (req, res) => {
     try {
       const group = await storage.getGroup(req.params.id);
       if (!group) {
-        return res.status(404).json({ message: "Group not found" });
+        return res.status(404).json({ message: 'Group not found' });
       }
 
-      // Check if user can access this specific group
-      if (!req.ability?.can('read', {
-        ...group,
-        subject: 'Group'
-      })) {
-        return res.status(403).json({ message: "You don't have access to this group" });
+      // Check if the user is a participant in the group
+      if (!group.participants.includes(req.user!.id)) {
+        return res.status(403).json({ message: 'Access denied' });
       }
 
       res.json(group);
     } catch (error) {
-      console.error("Error fetching group:", error);
-      res.status(500).json({ message: "Failed to fetch group" });
+      console.error('Error fetching group:', error);
+      res.status(500).json({ message: 'Failed to fetch group' });
     }
   });
 
@@ -321,24 +287,25 @@ export function registerRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/expenses", useAuthorization(), checkAbility('create', 'Expense'), async (req, res) => {
+  app.post("/api/expenses", useAuthorization(), async (req, res) => {
     try {
-      const validated = insertExpenseSchema.parse(req.body);
+      const validatedData = insertExpenseSchema.parse(req.body);
+      const group = await storage.getGroup(validatedData.groupId);
 
-      // Check if user can create expense in this group
-      if (!req.ability!.can('create', {
-        groupId: validated.groupId,
-        subject: 'Expense'
-      })) {
-        return res.status(403).json({ message: "You don't have permission to create expenses in this group" });
+      if (!group) {
+        return res.status(404).json({ message: 'Group not found' });
       }
 
-      const expense = await storage.createExpense(validated);
+      // Check if the user is a participant in the group
+      if (!group.participants.includes(req.user!.id)) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      const expense = await storage.createExpense(validatedData);
       res.status(201).json(expense);
     } catch (error) {
-      console.error("Error creating expense:", error);
-      const message = error instanceof Error ? error.message : "Invalid expense data";
-      res.status(400).json({ message });
+      console.error('Error creating expense:', error);
+      res.status(400).json({ message: 'Failed to create expense' });
     }
   });
 
@@ -413,147 +380,25 @@ export function registerRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/settlements", useAuthorization(), checkAbility('create', 'Settlement'), async (req, res) => {
+  app.post("/api/settlements", useAuthorization(), async (req, res) => {
     try {
-      const validated = insertSettlementSchema.parse(req.body);
+      const validatedData = insertSettlementSchema.parse(req.body);
+      const group = await storage.getGroup(validatedData.groupId);
 
-      // Check if user can create settlement in this group
-      if (!req.ability!.can('create', {
-        groupId: validated.groupId,
-        subject: 'Settlement'
-      })) {
-        return res.status(403).json({ message: "You don't have permission to create settlements in this group" });
-      }
-
-      const settlement = await storage.createSettlement(validated);
-      res.status(201).json(settlement);
-    } catch (error) {
-      console.error("Error creating settlement:", error);
-      const message = error instanceof Error ? error.message : "Invalid settlement data";
-      res.status(400).json({ message });
-    }
-  });
-
-  app.get("/api/users/:userId/groups", useAuthorization(), async (req, res) => {
-    try {
-      // Users can only view their own groups unless they're admin
-      if (req.user?.role !== 'admin' && req.user?.id !== req.params.userId) {
-        return res.status(403).json({ message: "You can only view your own groups" });
-      }
-
-      const groups = await storage.getUserGroups(req.params.userId);
-      res.json(groups);
-    } catch (error) {
-      console.error("Error fetching user groups:", error);
-      res.status(500).json({ message: "Failed to fetch user groups" });
-    }
-  });
-
-  // Expense routes
-  app.get("/api/groups/:groupId/expenses", async (req, res) => {
-    try {
-      const expenses = await storage.getGroupExpenses(req.params.groupId);
-      res.json(expenses);
-    } catch (error) {
-      console.error("Error fetching expenses:", error);
-      res.status(500).json({ message: "Failed to fetch expenses" });
-    }
-  });
-
-  app.get("/api/expenses/:id", async (req, res) => {
-    try {
-      const expense = await storage.getExpense(req.params.id);
-      if (!expense) {
-        return res.status(404).json({ message: "Expense not found" });
-      }
-      res.json(expense);
-    } catch (error) {
-      console.error("Error fetching expense:", error);
-      res.status(500).json({ message: "Failed to fetch expense" });
-    }
-  });
-
-  app.post("/api/expenses", async (req, res) => {
-    try {
-      const validated = insertExpenseSchema.parse(req.body);
-      const expense = await storage.createExpense(validated);
-      res.status(201).json(expense);
-    } catch (error) {
-      console.error("Error creating expense:", error);
-      const message = error instanceof Error ? error.message : "Invalid expense data";
-      res.status(400).json({ message });
-    }
-  });
-
-  app.put("/api/expenses/:id", async (req, res) => {
-    try {
-      const expense = await storage.updateExpense(req.params.id, req.body);
-      if (!expense) {
-        return res.status(404).json({ message: "Expense not found" });
-      }
-      res.json(expense);
-    } catch (error) {
-      console.error("Error updating expense:", error);
-      const message = error instanceof Error ? error.message : "Failed to update expense";
-      res.status(400).json({ message });
-    }
-  });
-
-  app.delete("/api/expenses/:id", async (req, res) => {
-    try {
-      const deleted = await storage.deleteExpense(req.params.id);
-      if (!deleted) {
-        return res.status(404).json({ message: "Expense not found" });
-      }
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting expense:", error);
-      res.status(500).json({ message: "Failed to delete expense" });
-    }
-  });
-
-  // Settlement routes
-  app.get("/api/groups/:groupId/settlements", useAuthorization(), checkAbility('read', 'Settlement'), async (req, res) => {
-    try {
-      const group = await storage.getGroup(req.params.groupId);
       if (!group) {
-        return res.status(404).json({ message: "Group not found" });
+        return res.status(404).json({ message: 'Group not found' });
       }
 
-      // Check if user can access this group's settlements
-      if (!req.ability!.can('read', {
-        groupId: group.id,
-        subject: 'Settlement'
-      })) {
-        return res.status(403).json({ message: "You don't have access to this group's settlements" });
+      // Check if the user is a participant in the group
+      if (!group.participants.includes(req.user!.id)) {
+        return res.status(403).json({ message: 'Access denied' });
       }
 
-      const settlements = await storage.getGroupSettlements(req.params.groupId);
-      res.json(settlements);
-    } catch (error) {
-      console.error("Error fetching settlements:", error);
-      res.status(500).json({ message: "Failed to fetch settlements" });
-    }
-  });
-
-  app.post("/api/settlements", useAuthorization(), checkAbility('create', 'Settlement'), async (req, res) => {
-    try {
-      const validated = insertSettlementSchema.parse(req.body);
-
-      // Check if user can create settlements in this group
-      if (!req.ability!.can('create', {
-        groupId: validated.groupId,
-        subject: 'Settlement'
-      })) {
-        return res.status(403).json({ message: "You don't have permission to create settlements in this group" });
-      }
-
-      const settlement = await storage.createSettlement(validated);
+      const settlement = await storage.createSettlement(validatedData);
       res.status(201).json(settlement);
     } catch (error) {
-      console.error("Error creating settlement:", error);
-      const message = error instanceof Error ? error.message : "Invalid settlement data";
-      res.status(400).json({ message });
+      console.error('Error creating settlement:', error);
+      res.status(400).json({ message: 'Failed to create settlement' });
     }
   });
 
@@ -604,4 +449,10 @@ export function registerRoutes(app: Express): void {
       res.status(500).json({ message: "Failed to calculate balances" });
     }
   });
+}
+
+// Check for required environment variables
+if (!process.env.JWT_SECRET) {
+  console.error('JWT_SECRET environment variable is not set. The application cannot start without it.');
+  process.exit(1);
 }

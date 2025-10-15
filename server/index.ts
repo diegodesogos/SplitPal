@@ -18,9 +18,14 @@ app.use(cookieParser());
 const isProduction = process.env.NODE_ENV === 'production';
 const config = StorageFactory.getConfigFromEnvironment();
 
+if (!config.sessionSecret) {
+  console.error('SESSION_SECRET environment variable is not set. The application cannot start without it.');
+  process.exit(1);
+}
+
 app.use(session({
   store: StorageFactory.getSessionStore(),
-  secret: config.sessionSecret || 'your-secret-key', // IMPORTANT: Always use environment variable in production
+  secret: config.sessionSecret, // Always use environment variable in production
   resave: false,
   saveUninitialized: false,
   cookie: {
