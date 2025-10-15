@@ -2,9 +2,6 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes.js";
 import path from "path";
 import { fileURLToPath } from "url";
-import session from "express-session";
-import cookieParser from "cookie-parser";
-import { StorageFactory } from "./storage/factory.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -12,35 +9,13 @@ const app = express();
 // --- Middleware ---
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
 
-// Session configuration
-const isProduction = process.env.NODE_ENV === 'production';
-const config = StorageFactory.getConfigFromEnvironment();
-
-if (!config.sessionSecret) {
-  console.error('SESSION_SECRET environment variable is not set. The application cannot start without it.');
-  process.exit(1);
-}
-
-app.use(session({
-  store: StorageFactory.getSessionStore(),
-  secret: config.sessionSecret, // Always use environment variable in production
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: isProduction, // Only use secure cookies in production
-    httpOnly: true,
-    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
-  }
-}));
 
 // Initialize Passport and restore authentication state from session
 import passport from 'passport';
 import { configurePassport } from './auth.js';
 
 app.use(passport.initialize());
-app.use(passport.session());
 configurePassport(passport);
 
 // Simple logging middleware for development
