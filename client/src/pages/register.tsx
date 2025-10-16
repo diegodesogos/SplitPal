@@ -43,10 +43,11 @@ export function Register() {
         throw new Error(error.message || "Failed to register");
       }
 
-      // Registration successful, redirect to login
-      navigate("/login", { 
-        state: { message: "Registration successful! Please log in." }
-      });
+      const { token } = await response.json();
+      
+      // Registration successful with token, store it and redirect to home
+      localStorage.setItem('jwt_token', token);
+      navigate("/", { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to register");
     }

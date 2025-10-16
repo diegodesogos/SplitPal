@@ -8,6 +8,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  // Handle OAuth callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    if (token) {
+      localStorage.setItem('jwt_token', token);
+      window.history.replaceState({}, document.title, window.location.pathname);
+      checkAuth();
+    }
+  }, []);
+
   // Check if user is authenticated on mount
   useEffect(() => {
     checkAuth();
@@ -15,9 +26,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkAuth = async () => {
     try {
-      const response = await fetch("/api/auth/me");
+      const token = localStorage.getItem('jwt_token');
+      if (!token) {
+        setUser(null);
+        return;
+      }
+
+      const response = await fetch("/api/auth/me", {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (!response.ok) {
         if (response.status === 401) {
+          localStorage.removeItem('jwt_token');
           setUser(null);
           return;
         }
@@ -46,7 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ username, password }),
+          body: JSON.stringify({ username, password })
         });
 
         if (!response.ok) {
@@ -54,11 +76,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           throw new Error(error.message || "Login failed");
         }
 
-        const userData = await response.json();
+        const { token, user: userData } = await response.json();
+        localStorage.setItem('jwt_token', token);
         setUser(userData);
         navigate("/");
       } else {
-        // OAuth login
+        // OAuth login - will receive token in redirect URL
         window.location.href = "/api/auth/google";
       }
     } catch (err) {
@@ -71,12 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-      });
-      if (!response.ok) {
-        throw new Error("Failed to logout");
-      }
+      localStorage.removeItem('jwt_token');
       setUser(null);
       navigate("/login");
     } catch (error) {

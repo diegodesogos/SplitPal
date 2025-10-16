@@ -71,10 +71,23 @@ export function Login() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full">
-              Sign In
+            <Button type="submit" className="w-full mb-4">
+              Sign In with Password
             </Button>
-            <div className="text-center text-sm text-muted-foreground">
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="w-full"
+              onClick={() => window.location.href = "/api/auth/google"}
+            >
+              <img
+                src="https://www.google.com/favicon.ico"
+                alt="Google"
+                className="w-4 h-4 mr-2"
+              />
+              Sign In with Google
+            </Button>
+            <div className="text-center text-sm text-muted-foreground mt-4">
               Don't have an account yet?{" "}
               <Button
                 variant="link"
