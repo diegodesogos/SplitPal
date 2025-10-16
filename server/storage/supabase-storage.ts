@@ -53,6 +53,18 @@ export class SupabaseStorage implements IStorage {
     return data as User;
   }
 
+  async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
+    const { data, error } = await this.supabase
+      .from('users')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw new Error(`Failed to update user: ${error.message}`);
+    return data as User;
+  }
+
   async getAllUsers(): Promise<User[]> {
     const { data, error } = await this.supabase
       .from('users')

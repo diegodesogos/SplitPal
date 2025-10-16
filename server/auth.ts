@@ -98,64 +98,40 @@ export function configurePassport(passport: PassportStatic) {
     return;
   }
 
-  // Configure Google Strategy
   passport.use(new GoogleStrategy({
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.VERCEL 
-        ? `https://${process.env.VERCEL_URL}/api/auth/google/callback`
-        : `http://localhost:${process.env.BACKEND_PORT || 5001}/api/auth/google/callback`,
-    },
-    async (accessToken, refreshToken, profile, done) => {
-      try {
-        // Check if user exists
-        let user = await storage.getUserByEmail(profile.emails?.[0]?.value || '');
-
-        if (!user) {
-          // Create new user
-          const newUser = {
-            email: profile.emails?.[0]?.value || '',
-            name: profile.displayName,
-            username: profile.emails?.[0]?.value?.split('@')[0] || '',
-            provider: 'google',
-            providerId: profile.id,
-            role: 'member' as Role,
-            hashedPassword: undefined, // Not used for OAuth
-            lastLoginAt: new Date()
-          };
-
-          user = await storage.createUser(newUser);
-        } else {
-          // Update existing user's last login
-          user = await storage.updateUser(user.id, { lastLoginAt: new Date() });
-        }
-
-        if (!user) {
-          return done(new Error('Failed to create/update user'));
-        }
-
-        // Generate JWT token
-        const token = generateToken(user);
-
-        // Create the authenticated user object
-        const publicUser: Express.User = {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          lastLoginAt: user.lastLoginAt,
-          token // Include the token for the session
-          ,
-          hashedPassword: user.hashedPassword,
-          provider: user.provider,
-          providerId: user.providerId
-        };
-
-        done(null, publicUser);
-      } catch (error) {
-        done(error as Error);
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5001'}/api/auth/google/callback`,
+    scope: ['email', 'profile'],
+    state: true, // Enable CSRF protection
+    passReqToCallback: true
+  },
+  async (_req: any, _accessToken: string, _refreshToken: string, profile: any, done: any) => {
+    try {
+      // Try to find user by email
+      const email = profile.emails[0].value;
+      const existingUser = await storage.getUserByEmail(email);
+      
+      if (existingUser) {
+        const token = generateToken(existingUser);
+        return done(null, { ...existingUser, token });
       }
+
+      // Create new user if not found
+      const username = email.split('@')[0]; // Generate username from email
+      const newUser = await storage.createUser({
+        username,
+        email,
+        name: profile.displayName,
+        role: 'member', // Default role for new users
+        provider: 'google',
+        providerId: profile.id
+      });
+
+      const token = generateToken(newUser);
+      return done(null, { ...newUser, token });
+    } catch (error) {
+      return done(error, null);
     }
-  ));
+  }));
 }

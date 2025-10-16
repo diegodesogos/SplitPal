@@ -264,6 +264,11 @@ export class GoogleSheetsStorage implements IStorage {
       username: userRow[1],
       email: userRow[2],
       name: userRow[3],
+      role: userRow[4] as User['role'] || 'member',
+      hashedPassword: userRow[5] || null,
+      provider: userRow[6] || null,
+      providerId: userRow[7] || null,
+      lastLoginAt: userRow[8] ? new Date(userRow[8]) : null
     };
   }
 
@@ -277,6 +282,11 @@ export class GoogleSheetsStorage implements IStorage {
       username: userRow[1],
       email: userRow[2],
       name: userRow[3],
+      role: userRow[4] as User['role'] || 'member',
+      hashedPassword: userRow[5] || null,
+      provider: userRow[6] || null,
+      providerId: userRow[7] || null,
+      lastLoginAt: userRow[8] ? new Date(userRow[8]) : null
     };
   }
 
@@ -290,6 +300,11 @@ export class GoogleSheetsStorage implements IStorage {
       username: userRow[1],
       email: userRow[2],
       name: userRow[3],
+      role: userRow[4] as User['role'] || 'member',
+      hashedPassword: userRow[5] || null,
+      provider: userRow[6] || null,
+      providerId: userRow[7] || null,
+      lastLoginAt: userRow[8] ? new Date(userRow[8]) : null
     };
   }
 
@@ -298,6 +313,10 @@ export class GoogleSheetsStorage implements IStorage {
     const user: User = {
       id,
       ...insertUser,
+      lastLoginAt: new Date(),
+      hashedPassword: insertUser.hashedPassword || null,
+      provider: insertUser.provider || null,
+      providerId: insertUser.providerId || null
     };
 
     await this.appendToSheet(this.rootSheetsId, 'users', [[
@@ -305,9 +324,37 @@ export class GoogleSheetsStorage implements IStorage {
       user.username,
       user.email,
       user.name,
+      user.role,
+      user.hashedPassword,
+      user.provider,
+      user.providerId,
+      user.lastLoginAt ? user.lastLoginAt.toISOString() : null
     ]]);
 
     return user;
+  }
+
+  async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
+    const rowIndex = await this.findRowIndex(this.rootSheetsId, 'users', id);
+    if (rowIndex === -1) return undefined;
+
+    const existingUser = await this.getUser(id);
+    if (!existingUser) return undefined;
+
+    const updatedUser = { ...existingUser, ...updates };
+    await this.updateSheetRow(this.rootSheetsId, 'users', rowIndex, [
+      updatedUser.id,
+      updatedUser.username,
+      updatedUser.email,
+      updatedUser.name,
+      updatedUser.role,
+      updatedUser.hashedPassword,
+      updatedUser.provider,
+      updatedUser.providerId,
+      updatedUser.lastLoginAt ? updatedUser.lastLoginAt.toISOString() : null
+    ]);
+
+    return updatedUser;
   }
 
   async getAllUsers(): Promise<User[]> {
@@ -317,6 +364,11 @@ export class GoogleSheetsStorage implements IStorage {
       username: row[1],
       email: row[2],
       name: row[3],
+      role: row[4] as User['role'],
+      hashedPassword: row[5],
+      provider: row[6],
+      providerId: row[7],
+      lastLoginAt: row[8] ? new Date(row[8]) : null
     }));
   }
 

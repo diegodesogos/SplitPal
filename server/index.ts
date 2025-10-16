@@ -10,8 +10,12 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Ensure JWT secret is set
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
 
-// Initialize Passport and restore authentication state from session
+// Initialize Passport without session support
 import passport from 'passport';
 import { configurePassport } from './auth.js';
 
