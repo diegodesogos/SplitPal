@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "../context/auth-provider";
 import { useLocation } from "wouter";
 
 interface User {
@@ -33,6 +33,7 @@ export default function AddExpense() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
+  const { axiosWithAuth } = useAuth();
 
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
@@ -52,7 +53,8 @@ export default function AddExpense() {
 
   const expenseMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest("POST", "/api/expenses", data);
+      const response = await axiosWithAuth.post("/api/expenses", data);
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "expenses"] });

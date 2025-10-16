@@ -67,8 +67,9 @@ SplitPal is a mobile-first expense sharing application built with React, TypeScr
 
 SplitPal uses a robust authentication and authorization system with role-based access control (RBAC). For detailed information about roles, permissions, and session management, refer to the [Authentication and Authorization README](README-AUTH.md).
 
+
 ### Authentication
-SplitPal uses JWT (JSON Web Tokens) for authentication, with Google OAuth 2.0 as the primary authentication provider.
+SplitPal uses JWT (JSON Web Tokens) for authentication, supporting both Google OAuth 2.0 and username/password login. All API requests are made using an Axios instance provided by the AuthProvider (`axiosWithAuth`), which automatically attaches the JWT from in-memory state to the Authorization header.
 
 - **Setup Requirements**:
   1. Create credentials in [Google Cloud Console](https://console.cloud.google.com/):
@@ -83,12 +84,12 @@ SplitPal uses JWT (JSON Web Tokens) for authentication, with Google OAuth 2.0 as
      GOOGLE_CLIENT_SECRET=your_client_secret
      JWT_SECRET=your_secure_jwt_secret
      ```
-     
+
 - **Authentication Flow**:
-  1. User initiates Google OAuth login
-  2. After successful OAuth, server generates a JWT token
-  3. Token is passed to frontend via URL fragment
-  4. Frontend stores token in memory and includes it in Authorization header
+  1. User initiates Google OAuth login or registers with username/password
+  2. After successful authentication, server generates a JWT token
+  3. Token is returned in the JSON response
+  4. Frontend stores token in memory (React state) and includes it in the Authorization header for all API requests (handled by the AuthProvider's Axios instance)
   5. Protected routes verify token validity
 
 ### Authorization
@@ -102,6 +103,7 @@ SplitPal uses JWT (JSON Web Tokens) for authentication, with Google OAuth 2.0 as
 - **Database**: Neon Database for PostgreSQL in production.
 - **UI Libraries**: Radix UI, Tailwind CSS, Lucide React.
 - **State Management**: TanStack Query, React Hook Form.
+- **API Requests**: Axios (with centralized instance and JWT handling)
 
 ## Deployment
 

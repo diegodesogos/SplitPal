@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "../context/auth-provider";
 import { Filter, ArrowUpDown, Utensils, Car, Bed, ShoppingBag, Gamepad2, MoreHorizontal, Trash2 } from "lucide-react";
 
 interface User {
@@ -36,6 +36,7 @@ export default function Expenses() {
   const [editCategory, setEditCategory] = useState("");
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { axiosWithAuth } = useAuth();
 
   const { data: users = [] } = useQuery<User[]>({
     queryKey: ["/api/users"],
@@ -72,11 +73,14 @@ export default function Expenses() {
 
   const updateExpenseMutation = useMutation({
     mutationFn: async (data: { id: string; description: string; amount: string; category: string }) => {
-      return apiRequest("PUT", `/api/expenses/${data.id}`, {
-        description: data.description,
-        amount: data.amount,
-        category: data.category,
-      });
+      const response = await axiosWithAuth.put(`/api/expenses/${data.id}`,
+        {
+          description: data.description,
+          amount: data.amount,
+          category: data.category,
+        }
+      );
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "expenses"] });
@@ -98,7 +102,8 @@ export default function Expenses() {
 
   const deleteExpenseMutation = useMutation({
     mutationFn: async (expenseId: string) => {
-      return apiRequest("DELETE", `/api/expenses/${expenseId}`);
+      const response = await axiosWithAuth.delete(`/api/expenses/${expenseId}`);
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "expenses"] });

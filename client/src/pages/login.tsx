@@ -1,16 +1,15 @@
 import { useState } from "react";
 import { Navigate, useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../context/auth-context";
+import { useAuth } from "../context/auth-provider";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
 
-export function Login() {
+export default function Login() {
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +20,6 @@ export function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
     try {
       await login(username, password);
       navigate("/", { replace: true });

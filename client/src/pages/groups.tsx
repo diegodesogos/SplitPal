@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "../context/auth-provider";
 import { Users, Plus } from "lucide-react";
 
 interface User {
@@ -30,6 +30,7 @@ export default function Groups() {
   const { activeGroupId, setActiveGroupId, currentUserId } = useAppContext();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { axiosWithAuth } = useAuth();
   
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [groupName, setGroupName] = useState("");
@@ -51,7 +52,8 @@ export default function Groups() {
 
   const createGroupMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest("POST", "/api/groups", data);
+      const response = await axiosWithAuth.post("/api/groups", data);
+      return response.data;
     },
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["/api/users", currentUserId, "groups"] });

@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
-import { useAuth } from "../context/auth-context";
+import { useAuth } from "../context/auth-provider";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
 
-export function Register() {
+export default function Register() {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -14,7 +14,7 @@ export function Register() {
     name: "",
   });
   const [error, setError] = useState<string | null>(null);
-  const { isAuthenticated } = useAuth();
+  const { register, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,28 +28,16 @@ export function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+      await register({
+        username: formData.username,
+        password: formData.password,
+        email: formData.email,
+        name: formData.name
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to register");
-      }
-
-      const { token } = await response.json();
-      
-      // Registration successful with token, store it and redirect to home
-      localStorage.setItem('jwt_token', token);
-      navigate("/", { replace: true });
+      navigate('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to register");
+      setError('Registration failed. Please try again.');
     }
   };
 
@@ -71,7 +59,6 @@ export function Register() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-
             <div className="space-y-2">
               <Input
                 type="text"
@@ -82,7 +69,6 @@ export function Register() {
                 required
               />
             </div>
-
             <div className="space-y-2">
               <Input
                 type="email"
@@ -93,7 +79,6 @@ export function Register() {
                 required
               />
             </div>
-
             <div className="space-y-2">
               <Input
                 type="text"
@@ -104,7 +89,6 @@ export function Register() {
                 required
               />
             </div>
-
             <div className="space-y-2">
               <Input
                 type="password"
@@ -116,11 +100,9 @@ export function Register() {
                 minLength={8}
               />
             </div>
-
             <Button type="submit" className="w-full">
               Sign Up
             </Button>
-
             <div className="text-center text-sm text-muted-foreground">
               Already have an account?{" "}
               <Button

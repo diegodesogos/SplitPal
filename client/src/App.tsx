@@ -10,13 +10,13 @@ import AddExpense from "@/pages/add-expense";
 import Groups from "@/pages/groups";
 import Profile from "@/pages/profile";
 import NotFound from "@/pages/not-found";
-import { Login } from "@/pages/login";
-import { Register } from "@/pages/register";
+import Login from "@/pages/login";
+import Register from "@/pages/register";
 import BottomNavigation from "@/components/bottom-navigation";
 import Header from "@/components/header";
 import { AppContext } from "@/context/app-context";
 import { AuthProvider } from "@/context/auth-provider";
-import { useAuth } from "@/context/auth-context";
+import { useAuth } from "@/context/auth-provider";
 
 // Auth-aware route component that redirects to login if not authenticated
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {

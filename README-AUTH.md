@@ -40,7 +40,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 ### Token-Based Authentication
 SplitPal uses JSON Web Tokens (JWT) for stateless authentication:
 
-- **Token Generation**: Server generates JWT after successful OAuth authentication
+- **Token Generation**: Server generates JWT after successful OAuth or username/password authentication
 - **Token Contents**: 
   ```typescript
   interface JWTPayload {
@@ -51,18 +51,19 @@ SplitPal uses JSON Web Tokens (JWT) for stateless authentication:
   }
   ```
 - **Token Lifetime**: 7 days by default
-- **Token Storage**: Client-side in-memory storage (not in localStorage for security)
+- **Token Storage**: Client-side in-memory state (React context, not persisted)
 
 ### Authentication Flow
-1. **OAuth Authentication**:
-   - User clicks "Sign in with Google"
-   - Google OAuth flow completes
+1. **OAuth or Username/Password Authentication**:
+   - User clicks "Sign in with Google" or enters credentials
+   - OAuth or credential flow completes
    - Server creates/updates user record
    - Server generates JWT token
-   - Token returned via URL fragment
+   - Token returned in JSON response (not via URL fragment)
+   - Client stores token in memory (React state)
 
 2. **Subsequent Requests**:
-   - Client includes token in Authorization header
+   - Client includes token in Authorization header for all API requests (handled by the AuthProvider's Axios instance)
    - Format: `Authorization: Bearer <token>`
    - Server validates token signature and expiration
    - Server attaches user data to request
@@ -73,9 +74,9 @@ SplitPal uses JSON Web Tokens (JWT) for stateless authentication:
    - Invalid permissions return 403 status
 
 ### Security Considerations
-- Tokens are never stored in localStorage/sessionStorage
+- Tokens are stored in memory (React state) for stateless auth (do not use cookies or localStorage)
 - CSRF protection via token-based auth
-- XSS protection via HttpOnly cookies for OAuth flow
+- XSS protection: never expose JWT in rendered HTML
 - Automatic token expiration after 7 days
 - Environment-specific JWT secrets
 
@@ -95,6 +96,6 @@ VERCEL_URL=your.domain.com        # For Vercel deployments
 For implementation details, refer to:
 - `server/auth.ts`: JWT implementation and OAuth configuration
 - `server/authorization.ts`: Role-based access control
-- `client/src/context/auth-context.ts`: Frontend auth state management
-- `client/src/lib/queryClient.ts`: API authentication handling
+- `client/src/context/auth-provider.tsx`: Frontend auth state management (replaces deprecated auth-context)
+- `client/src/lib/queryClient.ts`: API authentication and Axios instance
 

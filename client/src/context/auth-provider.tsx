@@ -1,120 +1,112 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { AuthContext, AuthUser } from "./auth-context";
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<AuthUser | null>(null);
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import axios from 'axios';
+import { User } from '../../../shared/schema';
+
+// Type for registration data
+export interface RegisterData {
+  username: string;
+  password: string;
+  email: string;
+  name: string;
+}
+
+interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  token: string | null;
+  axiosWithAuth: any;
+  login: (username: string, password: string) => Promise<void>;
+  logout: () => void;
+  register: (userData: RegisterData) => Promise<void>;
+}
+
+const AuthContext = createContext<AuthState | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
+  const [token, setToken] = useState<string | null>(null);
 
-  // Handle OAuth callback
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
+  // Configure axios base URL
+  const apiBaseUrl = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_URL)
+    ? (import.meta as any).env.VITE_API_URL
+    : 'http://localhost:5001';
+
+  // Create an Axios instance that always attaches the current token
+  const axiosWithAuth = axios.create({ baseURL: apiBaseUrl });
+  axiosWithAuth.interceptors.request.use((config) => {
     if (token) {
-      localStorage.setItem('jwt_token', token);
-      window.history.replaceState({}, document.title, window.location.pathname);
-      checkAuth();
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
     }
-  }, []);
+    return config;
+  });
 
-  // Check if user is authenticated on mount
+  // Check authentication status on mount (if token exists in memory)
   useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    try {
-      const token = localStorage.getItem('jwt_token');
+    const checkAuth = async () => {
       if (!token) {
+        setIsLoading(false);
+        setIsAuthenticated(false);
         setUser(null);
         return;
       }
-
-      const response = await fetch("/api/auth/me", {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (!response.ok) {
-        if (response.status === 401) {
-          localStorage.removeItem('jwt_token');
-          setUser(null);
-          return;
-        }
-        throw new Error("Failed to get user info");
-      }
-
-      const userData = await response.json();
-      setUser(userData);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "An error occurred");
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const login = async (username?: string, password?: string) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      if (username && password) {
-        // Username/password login
-        const response = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ username, password })
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || "Login failed");
-        }
-
-        const { token, user: userData } = await response.json();
-        localStorage.setItem('jwt_token', token);
+      try {
+        const response = await axiosWithAuth.get<User>('/api/auth/me');
+        const userData = (response.data as any).user ? (response.data as any).user : response.data;
         setUser(userData);
-        navigate("/");
-      } else {
-        // OAuth login - will receive token in redirect URL
-        window.location.href = "/api/auth/google";
+        setIsAuthenticated(true);
+      } catch (error) {
+        setUser(null);
+        setIsAuthenticated(false);
+        setToken(null);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
+    };
+    checkAuth();
+    // Only run when token changes
+  }, [token]);
+
+  const login = async (username: string, password: string) => {
+    const response = await axios.post<{ token: string; user: User }>(`${apiBaseUrl}/api/auth/login`, { username, password });
+    const { token: newToken, user } = response.data;
+    setToken(newToken);
+    setUser(user);
+    setIsAuthenticated(true);
+    setIsLoading(false);
   };
 
-  const logout = async () => {
-    try {
-      localStorage.removeItem('jwt_token');
-      setUser(null);
-      navigate("/login");
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Failed to logout");
-    }
+  const register = async (userData: RegisterData) => {
+    const response = await axios.post<{ token: string; user: User }>(`${apiBaseUrl}/api/auth/register`, userData);
+    const { token: newToken, user } = response.data;
+    setToken(newToken);
+    setUser(user);
+    setIsAuthenticated(true);
+    setIsLoading(false);
+  };
+
+  const logout = () => {
+    setToken(null);
+    setUser(null);
+    setIsAuthenticated(false);
+    setIsLoading(false);
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        isLoading,
-        error,
-        login,
-        logout,
-        checkAuth,
-      }}
-    >
+    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, token, axiosWithAuth, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}
