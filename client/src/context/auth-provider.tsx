@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import axios from 'axios';
 import { User } from '../../../shared/schema';
@@ -16,10 +15,10 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   token: string | null;
-  axiosWithAuth: any;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   register: (userData: RegisterData) => Promise<void>;
+  getToken: () => string | null; // New function to expose token
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -35,15 +34,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ? (import.meta as any).env.VITE_API_URL
     : 'http://localhost:5001';
 
-  // Create an Axios instance that always attaches the current token
-  const axiosWithAuth = axios.create({ baseURL: apiBaseUrl });
-  axiosWithAuth.interceptors.request.use((config) => {
-    if (token) {
-      config.headers = config.headers || {};
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  });
+  // Function to expose the current token
+  const getToken = () => token;
 
   // Check authentication status on mount (if token exists in memory)
   useEffect(() => {
@@ -55,10 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       try {
-        const response = await axiosWithAuth.get<User>('/api/auth/me');
-        const userData = (response.data as any).user ? (response.data as any).user : response.data;
-        setUser(userData);
-        setIsAuthenticated(true);
+        setIsAuthenticated(true); // Set true if token exists and is valid
       } catch (error) {
         setUser(null);
         setIsAuthenticated(false);
@@ -93,17 +82,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);
-    setIsLoading(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, token, axiosWithAuth, login, logout, register }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, token, login, logout, register, getToken }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
