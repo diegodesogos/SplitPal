@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom'; // Import react-router-dom hooks
 import axios from 'axios';
 import { User } from '../../../shared/schema';
 
@@ -29,6 +30,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState<string | null>(null);
 
+  // Hooks from react-router-dom
+  const location = useLocation();
+  const navigate = useNavigate();
+
   // Configure axios base URL
   const apiBaseUrl = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_URL)
     ? (import.meta as any).env.VITE_API_URL
@@ -36,6 +41,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Function to expose the current token
   const getToken = () => token;
+
+  // NEW HOOK: Capture token from URL on load
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const tokenFromUrl = searchParams.get('token');
+
+    if (tokenFromUrl) {
+      setToken(tokenFromUrl);
+      // Clean the URL so the token isn't visible anymore
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location, navigate]); // This hook runs when location changes
 
   // Check authentication status on mount (if token exists in memory)
   useEffect(() => {
@@ -47,7 +64,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       try {
-        setIsAuthenticated(true); // Set true if token exists and is valid
+        // If we have a token, we are authenticated.
+        // For higher security, you could add a /api/auth/me call here
+        // to verify the token with the backend.
+        setIsAuthenticated(true);
       } catch (error) {
         setUser(null);
         setIsAuthenticated(false);
@@ -57,10 +77,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
     checkAuth();
-    // Only run when token changes
+    // This effect now correctly runs when the token state is set
   }, [token]);
 
   const login = async (username: string, password: string) => {
+    // ... (no changes to login function)
     const response = await axios.post<{ token: string; user: User }>(`${apiBaseUrl}/api/auth/login`, { username, password });
     const { token: newToken, user } = response.data;
     setToken(newToken);
@@ -70,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (userData: RegisterData) => {
+    // ... (no changes to register function)
     const response = await axios.post<{ token: string; user: User }>(`${apiBaseUrl}/api/auth/register`, userData);
     const { token: newToken, user } = response.data;
     setToken(newToken);
@@ -79,6 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    // ... (no changes to logout function)
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);

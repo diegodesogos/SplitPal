@@ -3,7 +3,7 @@ import { useAppContext } from "@/context/app-context";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Users, Check, Plus } from "lucide-react";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 
 interface Group {
   id: string;
@@ -18,7 +18,7 @@ interface GroupSwitcherModalProps {
 
 export default function GroupSwitcherModal({ isOpen, onClose }: GroupSwitcherModalProps) {
   const { activeGroupId, setActiveGroupId, currentUserId } = useAppContext();
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
 
   const { data: groups = [] } = useQuery<Group[]>({
     queryKey: ["/api/users", currentUserId, "groups"],
@@ -31,7 +31,7 @@ export default function GroupSwitcherModal({ isOpen, onClose }: GroupSwitcherMod
 
   const handleCreateNewGroup = () => {
     onClose();
-    setLocation("/groups");
+    navigate("/groups");
   };
 
   return (

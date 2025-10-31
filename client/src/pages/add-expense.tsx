@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 
 interface User {
   id: string;
@@ -32,7 +32,7 @@ export default function AddExpense() {
   const { activeGroupId, currentUserId } = useAppContext();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
 
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
@@ -61,7 +61,7 @@ export default function AddExpense() {
         title: "Expense added",
         description: "Your expense has been added successfully.",
       });
-      setLocation("/");
+      navigate("/dashboard");
     },
     onError: () => {
       toast({
@@ -334,7 +334,7 @@ export default function AddExpense() {
             type="button"
             variant="secondary"
             className="flex-1"
-            onClick={() => setLocation("/")}
+            onClick={() => navigate("/dashboard")}
             data-testid="button-cancel-expense"
           >
             Cancel
