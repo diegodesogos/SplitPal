@@ -2,6 +2,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import session from 'express-session';
+import { StorageFactory } from './storage/factory';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -21,6 +23,18 @@ import { configurePassport } from './auth.js';
 
 app.use(passport.initialize());
 configurePassport(passport);
+
+// Configure session middleware
+const sessionStore = StorageFactory.getSessionStore();
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'default_secret',
+  resave: false,
+  saveUninitialized: false,
+  store: sessionStore,
+}));
+
+// Initialize Passport with session support
+app.use(passport.session());
 
 // Simple logging middleware for development
 if (process.env.NODE_ENV !== "production") {

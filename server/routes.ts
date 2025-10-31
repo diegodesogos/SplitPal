@@ -1,7 +1,9 @@
 import type { Express, Request, Response } from "express";
 import passport from "passport";
 import bcrypt from "bcrypt";
+import jwt from 'jsonwebtoken';
 import { storage } from "./storage.js";
+import { generateToken, AuthResponse } from './auth.js';
 import { 
   insertGroupSchema, 
   insertExpenseSchema, 
@@ -10,6 +12,9 @@ import {
   loginUserSchema
 } from "@shared/schema.js";
 import { useAuthorization, checkAbility, AppUser } from "./authorization.js";
+
+// --- Add this constant ---
+const FRONTEND_URL_DEF = process.env.FRONTEND_URL || 'http://localhost:3001';
 
 export function registerRoutes(app: Express): void {
   // Authentication routes
@@ -59,12 +64,20 @@ export function registerRoutes(app: Express): void {
         return res.status(401).json({ message: 'Invalid username or password' });
       }
 
-      // Update last login time
+// Update last login time
+      // Note: You may want to await this, but not critical for the response
       await storage.updateUser(user.id, { lastLoginAt: new Date() });
 
-      // Respond with user data (excluding hashed password)
+      // Generate a token and return the correct AuthResponse ---
+      const token = generateToken(user);
       const { hashedPassword: _, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
+
+      // This now returns the user object *and* the token
+      res.json({
+        user: userWithoutPassword,
+        token: token
+      } as AuthResponse);
+
     } catch (error) {
       console.error('Error logging in:', error);
       res.status(500).json({ message: 'Failed to login' });
@@ -77,8 +90,19 @@ export function registerRoutes(app: Express): void {
         details: 'Missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET environment variables'
       });
     }
+
+    // 1. Generate the stateless 'state' token
+    // This is a short-lived JWT that we will verify in the callback.
+    const stateToken = jwt.sign(
+      { purpose: 'oauth-state' }, // Simple payload
+      process.env.JWT_SECRET as string,
+      { expiresIn: '5m' } // Short-lived!
+    );
+
+    // 2. Call passport.authenticate, passing our manual 'state' token
     passport.authenticate('google', { 
-      scope: ['profile', 'email']
+      scope: ['profile', 'email'],
+      state: stateToken
     })(req, res, next);
   });
 
@@ -90,17 +114,44 @@ export function registerRoutes(app: Express): void {
       });
     }
     
+    // 1. Manually retrieve and verify the 'state' token from the query
+    const stateToken = req.query.state as string;
+    if (!stateToken) {
+      const errorUrl = `${FRONTEND_URL_DEF}/login?error=${encodeURIComponent('Missing state parameter')}`;
+      return res.redirect(errorUrl);
+    }
+
+    try {
+      jwt.verify(stateToken, process.env.JWT_SECRET as string);
+      // If verification succeeds, the token is valid and not expired.
+    } catch (err) {
+      console.error('Invalid OAuth state token:', err);
+      // --- FIX: Redirect to FRONTEND ---
+      const errorUrl = `${FRONTEND_URL_DEF}/login?error=${encodeURIComponent('Invalid or expired state token')}`;
+      return res.redirect(errorUrl);
+    }
+
+    // 2. If state is valid, THEN let Passport handle the 'code'
     passport.authenticate('google', { session: false }, (err, user) => {
       if (err) {
-        return res.redirect('/login?error=' + encodeURIComponent(err.message));
+        // --- FIX: Redirect to FRONTEND ---
+        const errorUrl = `${FRONTEND_URL_DEF}/login?error=${encodeURIComponent(err.message)}`;
+        return res.redirect(errorUrl);
       }
       if (!user) {
-        return res.redirect('/login?error=Authentication failed');
+        // --- FIX: Redirect to FRONTEND ---
+        const errorUrl = `${FRONTEND_URL_DEF}/login?error=Authentication failed`;
+        return res.redirect(errorUrl);
       }
 
       // User has been authenticated, send token in URL fragment
       // This is secure as fragments are not sent to the server
-      res.redirect(`/?token=${user.token}`);
+     // --- THE FINAL FIX ---
+      // Redirect to the FRONTEND, not the backend's root.
+      // Your AuthProvider (auth-provider.tsx) is waiting for this URL.
+      const token = user.token;
+      const successUrl = `${FRONTEND_URL_DEF}/?token=${token}`;
+      res.redirect(successUrl);
     })(req, res, next);
   });
 

@@ -3,15 +3,17 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { storage } from './storage';
-import { User, Role, PublicUser } from '@shared/schema';
+import { User as SchemaUser, Role, PublicUser } from '@shared/schema';
+import { User } from '@shared/schema';
 
 // Types for authentication
 declare global {
   namespace Express {
+    // This tells Express that 'req.user' IS the PublicUser
     interface User extends PublicUser {
       token?: string;
     }
-  }
+ }
 }
 
 // Custom type for auth response
@@ -35,14 +37,13 @@ export interface JWTPayload {
 }
 
 // Request with auth data
-export interface AuthenticatedRequest extends Request {
-  user?: User;  // Must match Express.User (which extends User)
+export type AuthenticatedRequest = Request & {
   token?: string;
-  auth?: AuthResponse;      // For OAuth responses
-}
+  auth?: AuthResponse;
+};
 
 // Token generation with proper typing
-export function generateToken(user: User): string {
+export function generateToken(user: SchemaUser): string {
   if (!JWT_SECRET) throw new Error('JWT_SECRET not configured');
   
   return jwt.sign(
@@ -53,7 +54,7 @@ export function generateToken(user: User): string {
 }
 
 // Token verification with proper error handling and typing
-export function verifyToken(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+export async function verifyToken(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
@@ -69,18 +70,29 @@ export function verifyToken(req: AuthenticatedRequest, res: Response, next: Next
       throw new Error('Invalid token payload');
     }
     
-    // Store public user data and token
-    req.user = {
-      id: decoded.id,
-      role: decoded.role,
-      username: '', // Will be populated by subsequent middleware
-      email: '',    // Will be populated by subsequent middleware
-      name: '',     // Will be populated by subsequent middleware
-      lastLoginAt: null,
-      hashedPassword: null, // Not used for JWT-authenticated users
-      provider: null,       // Not used for JWT-authenticated users
-      providerId: null      // Not used for JWT-authenticated users
+    // Fetch the full user from storage using the ID from the token
+    const user = await storage.getUser(decoded.id);
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+
+   const publicUser: PublicUser = {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      lastLoginAt: user.lastLoginAt
     };
+
+    // Update req.user to include all properties required by the User type
+    req.user = {
+      ...publicUser,
+      hashedPassword: user.hashedPassword,
+      provider: user.provider,
+      providerId: user.providerId
+    } as User;
+    
     req.token = token;
     
     next();
@@ -103,7 +115,7 @@ export function configurePassport(passport: PassportStatic) {
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5001'}/api/auth/google/callback`,
     scope: ['email', 'profile'],
-    state: true, // Enable CSRF protection
+    state: false, // manage state for CSRF manually
     passReqToCallback: true
   },
   async (_req: any, _accessToken: string, _refreshToken: string, profile: any, done: any) => {
@@ -114,7 +126,23 @@ export function configurePassport(passport: PassportStatic) {
       
       if (existingUser) {
         const token = generateToken(existingUser);
-        return done(null, { ...existingUser, token });
+        const publicUser: PublicUser = {
+            id: existingUser.id,
+            username: existingUser.username,
+            email: existingUser.email,
+            name: existingUser.name,
+            role: existingUser.role,
+            lastLoginAt: existingUser.lastLoginAt
+          };
+        // Include additional properties to match the User type
+        const userWithAdditionalProps = {
+          ...publicUser,
+          hashedPassword: existingUser.hashedPassword,
+          provider: existingUser.provider,
+          providerId: existingUser.providerId
+        };
+
+        return done(null, { ...userWithAdditionalProps, token });
       }
 
       // Create new user if not found
@@ -129,7 +157,15 @@ export function configurePassport(passport: PassportStatic) {
       });
 
       const token = generateToken(newUser);
-      return done(null, { ...newUser, token });
+      const publicUser: PublicUser = {
+          id: newUser.id,
+          username: newUser.username,
+          email: newUser.email,
+          name: newUser.name,
+          role: newUser.role,
+          lastLoginAt: newUser.lastLoginAt
+        };
+      return done(null, { ...publicUser, token });
     } catch (error) {
       return done(error, null);
     }
