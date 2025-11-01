@@ -1,7 +1,9 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom'; // Import react-router-dom hooks
+import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { User } from '../../../shared/schema';
+// 1. Import from your new token store
+import { setAuthToken, getAuthToken as getTokenFromStore } from '../lib/tokenStore';
 
 // Type for registration data
 export interface RegisterData {
@@ -19,7 +21,7 @@ interface AuthState {
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   register: (userData: RegisterData) => Promise<void>;
-  getToken: () => string | null; // New function to expose token
+  getToken: () => string | null;
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -28,33 +30,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [token, setToken] = useState<string | null>(null);
+  // 2. Initialize state from the global store
+  const [token, _setToken] = useState<string | null>(() => getTokenFromStore());
 
-  // Hooks from react-router-dom
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Configure axios base URL
   const apiBaseUrl = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_URL)
     ? (import.meta as any).env.VITE_API_URL
     : 'http://localhost:5001';
 
-  // Function to expose the current token
+  // 3. Create a new setToken function that updates both stores
+  const setToken = (newToken: string | null) => {
+    setAuthToken(newToken); // Update global store
+    _setToken(newToken);   // Update React state
+  };
+
   const getToken = () => token;
 
-  // NEW HOOK: Capture token from URL on load
+  // Capture token from URL on load
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const tokenFromUrl = searchParams.get('token');
 
     if (tokenFromUrl) {
-      setToken(tokenFromUrl);
-      // Clean the URL so the token isn't visible anymore
+      setToken(tokenFromUrl); // Use our new setter
       navigate(location.pathname, { replace: true });
     }
-  }, [location, navigate]); // This hook runs when location changes
+  }, [location.search]); // Removed navigate dependency
 
-  // Check authentication status on mount (if token exists in memory)
+  // Check authentication status on mount
   useEffect(() => {
     const checkAuth = async () => {
       if (!token) {
@@ -63,35 +68,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         return;
       }
+
+      setIsLoading(true);
       try {
-        // If we have a token, we are authenticated.
-        // For higher security, you could add a /api/auth/me call here
-        // to verify the token with the backend.
+        // 4. Use raw axios, not the instance, to avoid interceptor loop
+        const response = await axios.get<User>(`${apiBaseUrl}/api/auth/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        setUser(response.data);
         setIsAuthenticated(true);
       } catch (error) {
+        console.error("Auth check failed:", error);
         setUser(null);
         setIsAuthenticated(false);
-        setToken(null);
+        setToken(null); // Clear the bad token
       } finally {
         setIsLoading(false);
       }
     };
     checkAuth();
-    // This effect now correctly runs when the token state is set
-  }, [token]);
+  }, [token, apiBaseUrl]);
 
   const login = async (username: string, password: string) => {
-    // ... (no changes to login function)
     const response = await axios.post<{ token: string; user: User }>(`${apiBaseUrl}/api/auth/login`, { username, password });
     const { token: newToken, user } = response.data;
-    setToken(newToken);
+    setToken(newToken); // Use our new setter
     setUser(user);
     setIsAuthenticated(true);
     setIsLoading(false);
   };
 
+  // 5. REVERT to your original register logic
   const register = async (userData: RegisterData) => {
-    // ... (no changes to register function)
+    // This will now work because the server returns { token, user }
     const response = await axios.post<{ token: string; user: User }>(`${apiBaseUrl}/api/auth/register`, userData);
     const { token: newToken, user } = response.data;
     setToken(newToken);
@@ -101,10 +113,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    // ... (no changes to logout function)
-    setToken(null);
+    setToken(null); // Use our new setter
     setUser(null);
     setIsAuthenticated(false);
+    navigate('/login'); // Redirect to login
   };
 
   return (

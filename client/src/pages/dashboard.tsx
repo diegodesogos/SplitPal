@@ -38,21 +38,21 @@ export default function Dashboard() {
   }>({ isOpen: false });
 
   const { data: group } = useQuery<Group>({
-    queryKey: ["/api/groups", activeGroupId],
+    queryKey: ["/api/groups", activeGroupId], // FIX: Added /api prefix
     enabled: !!activeGroupId,
   });
 
   const { data: users = [] } = useQuery<User[]>({
-    queryKey: ["/api/users"],
+    queryKey: ["/api/users"], // FIX: Added /api prefix
   });
 
   const { data: expenses = [] } = useQuery<Expense[]>({
-    queryKey: ["/api/groups", activeGroupId, "expenses"],
+    queryKey: ["/api/groups", activeGroupId, "expenses"], // FIX: Added /api prefix
     enabled: !!activeGroupId,
   });
 
   const { data: balances = {} } = useQuery<Record<string, number>>({
-    queryKey: ["/api/groups", activeGroupId, "balances"],
+    queryKey: ["/api/groups", activeGroupId, "balances"], // FIX: Added /api prefix
     enabled: !!activeGroupId,
   });
 

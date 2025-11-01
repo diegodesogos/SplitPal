@@ -21,7 +21,7 @@ export default function GroupSwitcherModal({ isOpen, onClose }: GroupSwitcherMod
   const navigate = useNavigate();
 
   const { data: groups = [] } = useQuery<Group[]>({
-    queryKey: ["/api/users", currentUserId, "groups"],
+    queryKey: ["/api/users", currentUserId, "groups"], // FIX: Added /api prefix
   });
 
   const handleSelectGroup = (groupId: string) => {

@@ -1,9 +1,9 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom"; // <-- FIX: Added useNavigate
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Dashboard from "@/pages/dashboard";
 import Expenses from "@/pages/expenses";
 import AddExpense from "@/pages/add-expense";
@@ -24,7 +24,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation(); // Get current location
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-xl">Loading...</div>
+      </div>
+    );
   }
 
   if (!isAuthenticated) {
@@ -47,11 +51,60 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
+// --- Add this interface ---
+interface Group {
+  id: string;
+  name: string;
+  participants: string[];
+}
 
 function AuthenticatedApp() {
-  const [activeGroupId, setActiveGroupId] = useState("demo-group");
-  const { user, isAuthenticated } = useAuth(); // Get isAuthenticated
+  const [activeGroupId, setActiveGroupId] = useState(""); // <-- FIX 1: Default to empty
+  const { user, isAuthenticated, isLoading } = useAuth(); // Get isAuthenticated
   const currentUserId = user?.id || "";
+  const navigate = useNavigate(); // <-- Add navigate
+  const location = useLocation(); // <-- Add location
+
+  // --- START: MODIFIED SECTION ---
+  // Query for user's groups
+  const { data: groups, isLoading: groupsLoading } = useQuery<Group[]>({
+    queryKey: ["/api/users", currentUserId, "groups"], // <-- FIX: Add /api prefix
+    enabled: !!currentUserId && isAuthenticated, // Only run when fully authenticated
+  });
+
+  // Effect to manage group state and redirects
+  useEffect(() => {
+    // Wait for auth and group data to finish loading
+    if (isLoading || groupsLoading) {
+      return; 
+    }
+
+    if (isAuthenticated && user) {
+      if (groups && groups.length > 0) {
+        // User has groups. Set active group if not already set or invalid
+        const currentGroupIsValid = groups.some(g => g.id === activeGroupId);
+        if (!activeGroupId || !currentGroupIsValid) {
+          setActiveGroupId(groups[0].id);
+        }
+      } else if (groups && groups.length === 0) {
+        // User has no groups, redirect to create one
+        // unless they are already on that page
+        if (location.pathname !== '/groups') {
+          navigate('/groups', { replace: true });
+        }
+      }
+    }
+  }, [
+    user, 
+    isAuthenticated, 
+    isLoading, 
+    groups, 
+    groupsLoading, 
+    activeGroupId, 
+    navigate,
+    location.pathname
+  ]);
+  // --- END: MODIFIED SECTION ---
 
   return (
     <AppContext.Provider value={{ activeGroupId, setActiveGroupId, currentUserId }}>
@@ -107,6 +160,7 @@ function AuthenticatedApp() {
         <Route
           path="/"
           element={
+            isLoading ? <div>Loading...</div> : // <-- Add loading check for root redirect
             isAuthenticated ? (
               <Navigate to="/dashboard" replace />
             ) : (

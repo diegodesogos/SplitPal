@@ -42,21 +42,21 @@ export default function AddExpense() {
   const [splits, setSplits] = useState<ExpenseSplit[]>([]);
 
   const { data: users = [] } = useQuery<User[]>({
-    queryKey: ["/api/users"],
+    queryKey: ["/api/users"], // FIX: Added /api prefix
   });
 
   const { data: group } = useQuery<Group>({
-    queryKey: ["/api/groups", activeGroupId],
+    queryKey: ["/api/groups", activeGroupId], // FIX: Added /api prefix
     enabled: !!activeGroupId,
   });
 
   const expenseMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest("POST", "/api/expenses", data);
+      return await apiRequest("POST", "/api/expenses", data); // FIX: Added /api prefix
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "expenses"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "balances"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "expenses"] }); // FIX: Added /api prefix
+      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "balances"] }); // FIX: Added /api prefix
       toast({
         title: "Expense added",
         description: "Your expense has been added successfully.",

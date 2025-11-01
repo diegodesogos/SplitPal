@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react"; // 1. Import useEffect
 import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/auth-provider";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card";
@@ -13,16 +13,29 @@ export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  
+  // 2. Read message from location state
   const [message, setMessage] = useState<string | null>(
     location.state?.message || null
   );
 
+  // 3. Clear message on component mount
+  useEffect(() => {
+    if (location.state?.message) {
+      // Clear the location state to prevent message from sticking on reload
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setMessage(null); // Clear message on new login attempt
     try {
       await login(username, password);
-      navigate("/", { replace: true });
+      // 4. Redirect to intended page or dashboard
+      const from = location.state?.from?.pathname || "/dashboard";
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to login");
     }
@@ -36,8 +49,10 @@ export default function Login() {
     );
   }
 
+  // 5. Redirect to intended page or dashboard
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    const from = location.state?.from?.pathname || "/dashboard";
+    return <Navigate to={from} replace />;
   }
 
   return (
@@ -54,6 +69,7 @@ export default function Login() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
+            {/* 6. Add Alert for message */}
             {message && (
               <Alert>
                 <AlertDescription>{message}</AlertDescription>

@@ -38,11 +38,11 @@ export default function Expenses() {
   const { toast } = useToast();
 
   const { data: users = [] } = useQuery<User[]>({
-    queryKey: ["/api/users"],
+    queryKey: ["/api/users"], // FIX: Added /api prefix
   });
 
   const { data: expenses = [] } = useQuery<Expense[]>({
-    queryKey: ["/api/groups", activeGroupId, "expenses"],
+    queryKey: ["/api/groups", activeGroupId, "expenses"], // FIX: Added /api prefix
     enabled: !!activeGroupId,
   });
 
@@ -81,8 +81,8 @@ export default function Expenses() {
       );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "expenses"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "balances"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "expenses"] }); // FIX: Added /api prefix
+      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "balances"] }); // FIX: Added /api prefix
       toast({
         title: "Success",
         description: "Expense updated successfully!",
@@ -103,8 +103,8 @@ export default function Expenses() {
       return await apiRequest("DELETE", `/api/expenses/${expenseId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "expenses"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "balances"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "expenses"] }); // FIX: Added /api prefix
+      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "balances"] }); // FIX: Added /api prefix
       toast({
         title: "Success",
         description: "Expense deleted successfully!",

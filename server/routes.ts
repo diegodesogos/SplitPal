@@ -39,9 +39,17 @@ export function registerRoutes(app: Express): void {
         role: 'member'
       });
 
-      // Respond with user data (excluding hashed password)
+      // --- START: MODIFIED SECTION ---
+      // FIX: Generate a token and return the full AuthResponse
+      const token = generateToken(user);
       const { hashedPassword: _, ...userWithoutPassword } = user;
-      res.status(201).json(userWithoutPassword);
+
+      res.status(201).json({
+        user: userWithoutPassword,
+        token: token
+      } as AuthResponse);
+      // --- END: MODIFIED SECTION ---
+      
     } catch (error) {
       console.error('Error registering user:', error);
       res.status(400).json({ 
