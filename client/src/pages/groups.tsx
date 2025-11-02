@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Users, Plus } from "lucide-react";
@@ -143,6 +143,9 @@ export default function Groups() {
           <DialogContent className="sm:max-w-md" data-testid="modal-create-group">
             <DialogHeader>
               <DialogTitle>Create New Group</DialogTitle>
+              <DialogDescription>
+                Fill in the details to create a new group.
+              </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreateGroup} className="space-y-4">
               <div>

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/app-context";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Users, Check, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -39,6 +39,9 @@ export default function GroupSwitcherModal({ isOpen, onClose }: GroupSwitcherMod
       <DialogContent className="sm:max-w-md" data-testid="modal-group-switcher">
         <DialogHeader>
           <DialogTitle className="text-center">Switch Group</DialogTitle>
+          <DialogDescription>
+                Fill in the details to create a new group.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-3 max-h-96 overflow-y-auto">

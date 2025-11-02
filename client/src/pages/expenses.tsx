@@ -4,7 +4,7 @@ import { useAppContext } from "@/context/app-context";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -252,6 +252,9 @@ export default function Expenses() {
         <DialogContent data-testid="dialog-edit-expense">
           <DialogHeader>
             <DialogTitle>Edit Expense</DialogTitle>
+            <DialogDescription>
+              Update the details for your expense.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
