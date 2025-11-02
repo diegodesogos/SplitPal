@@ -1,11 +1,12 @@
-import { useLocation } from "wouter";
+import { useLocation, useNavigate } from "react-router-dom"; // <--- Change this import
 import { Home, Receipt, Plus, Users, User } from "lucide-react";
 
 export default function BottomNavigation() {
-  const [location, setLocation] = useLocation();
+  const location = useLocation(); // <--- Change this hook
+  const navigate = useNavigate(); // <--- Add this hook
 
   const tabs = [
-    { id: "home", path: "/", icon: Home, label: "Home" },
+    { id: "home", path: "/dashboard", icon: Home, label: "Home" }, // <-- Point "Home" to /dashboard
     { id: "expenses", path: "/expenses", icon: Receipt, label: "Expenses" },
     { id: "add", path: "/add-expense", icon: Plus, label: "" },
     { id: "groups", path: "/groups", icon: Users, label: "Groups" },
@@ -16,14 +17,14 @@ export default function BottomNavigation() {
     <nav className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-card border-t border-border" data-testid="bottom-navigation">
       <div className="flex items-center justify-around py-2">
         {tabs.map((tab) => {
-          const isActive = location === tab.path;
+          const isActive = location.pathname === tab.path; // <--- Use location.pathname
           const isAddButton = tab.id === "add";
           const Icon = tab.icon;
 
           return (
             <button
               key={tab.id}
-              onClick={() => setLocation(tab.path)}
+              onClick={() => navigate(tab.path)} // <--- Change to navigate()
               className={`flex flex-col items-center py-2 px-4 ${
                 isAddButton
                   ? "bg-primary text-primary-foreground rounded-full -mt-3 shadow-lg"

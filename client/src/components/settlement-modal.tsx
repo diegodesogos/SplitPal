@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppContext } from "@/context/app-context";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -90,6 +90,9 @@ export default function SettlementModal({
       <DialogContent className="sm:max-w-md" data-testid="modal-settlement">
         <DialogHeader>
           <DialogTitle className="text-center">Settle Balance</DialogTitle>
+          <DialogDescription>
+              Record a payment between two group members.
+            </DialogDescription>
         </DialogHeader>
 
         {fromUser && toUser && (

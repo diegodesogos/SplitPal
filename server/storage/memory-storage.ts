@@ -23,15 +23,50 @@ export class MemStorage implements IStorage {
       id: "demo-user",
       username: "demo",
       email: "demo@example.com",
-      name: "Demo User"
+      name: "Demo User",
+      role: "member",
+      hashedPassword: null,
+      provider: null,
+      providerId: null,
+      lastLoginAt: new Date()
     };
     this.users.set(demoUser.id, demoUser);
 
     // Create some demo participants
-    const participants = [
-      { id: "user-1", username: "john", email: "john@example.com", name: "John Doe" },
-      { id: "user-2", username: "sarah", email: "sarah@example.com", name: "Sarah Miller" },
-      { id: "user-3", username: "mike", email: "mike@example.com", name: "Mike Johnson" }
+    const participants: User[] = [
+      { 
+        id: "user-1", 
+        username: "john", 
+        email: "john@example.com", 
+        name: "John Doe",
+        role: "member",
+        hashedPassword: null,
+        provider: null,
+        providerId: null,
+        lastLoginAt: new Date()
+      },
+      { 
+        id: "user-2", 
+        username: "sarah", 
+        email: "sarah@example.com", 
+        name: "Sarah Miller",
+        role: "member",
+        hashedPassword: null,
+        provider: null,
+        providerId: null,
+        lastLoginAt: new Date()
+      },
+      { 
+        id: "user-3", 
+        username: "mike", 
+        email: "mike@example.com", 
+        name: "Mike Johnson",
+        role: "member",
+        hashedPassword: null,
+        provider: null,
+        providerId: null,
+        lastLoginAt: new Date()
+      }
     ];
 
     participants.forEach(user => this.users.set(user.id, user));
@@ -72,9 +107,25 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
-    const user: User = { ...insertUser, id };
+    const user: User = {
+      ...insertUser,
+      id,
+      lastLoginAt: new Date(),
+      hashedPassword: insertUser.hashedPassword || null,
+      provider: insertUser.provider || null,
+      providerId: insertUser.providerId || null
+    };
     this.users.set(id, user);
     return user;
+  }
+
+  async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
+    const existingUser = this.users.get(id);
+    if (!existingUser) return undefined;
+
+    const updatedUser = { ...existingUser, ...updates };
+    this.users.set(id, updatedUser);
+    return updatedUser;
   }
 
   async getAllUsers(): Promise<User[]> {

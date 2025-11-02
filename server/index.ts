@@ -2,13 +2,48 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import session from 'express-session';
+import { StorageFactory } from './storage/factory';
+import cors from 'cors';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
+// Get the frontend URL from environment variables, defaulting to 3001
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3001';
+
+app.use(cors({
+  origin: FRONTEND_URL, // Allow only the frontend origin
+  credentials: true,     // Allow cookies and authorization headers
+}));
+
 // --- Middleware ---
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Ensure JWT secret is set
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
+
+// Initialize Passport without session support
+import passport from 'passport';
+import { configurePassport } from './auth.js';
+
+app.use(passport.initialize());
+configurePassport(passport);
+
+// Configure session middleware
+const sessionStore = StorageFactory.getSessionStore();
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'default_secret',
+  resave: false,
+  saveUninitialized: false,
+  store: sessionStore,
+}));
+
+// Initialize Passport with session support
+app.use(passport.session());
 
 // Simple logging middleware for development
 if (process.env.NODE_ENV !== "production") {

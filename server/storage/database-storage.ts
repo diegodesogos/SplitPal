@@ -28,6 +28,11 @@ export class DatabaseStorage implements IStorage {
     throw new Error('Database storage not yet implemented');
   }
 
+  async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
+    // TODO: Implement database update using Drizzle ORM
+    throw new Error('Database storage not yet implemented');
+  }
+
   async getAllUsers(): Promise<User[]> {
     // TODO: Implement database query using Drizzle ORM
     throw new Error('Database storage not yet implemented');

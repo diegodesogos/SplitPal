@@ -1,0 +1,1 @@
+// Deprecated: use AuthContext and useAuth from auth-provider.tsx instead

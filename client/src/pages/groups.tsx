@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Users, Plus } from "lucide-react";
@@ -37,15 +37,15 @@ export default function Groups() {
   const [participantEmails, setParticipantEmails] = useState("");
 
   const { data: users = [] } = useQuery<User[]>({
-    queryKey: ["/api/users"],
+    queryKey: ["/api/users"], // FIX: Added /api prefix
   });
 
   const { data: groups = [] } = useQuery<Group[]>({
-    queryKey: ["/api/users", currentUserId, "groups"],
+    queryKey: ["/api/users", currentUserId, "groups"], // FIX: Added /api prefix
   });
 
   const { data: expenses = [] } = useQuery<any[]>({
-    queryKey: ["/api/groups", activeGroupId, "expenses"],
+    queryKey: ["/api/groups", activeGroupId, "expenses"], // FIX: Added /api prefix
     enabled: !!activeGroupId,
   });
 
@@ -54,8 +54,8 @@ export default function Groups() {
       return await apiRequest("POST", "/api/groups", data);
     },
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users", currentUserId, "groups"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users", currentUserId, "groups"] }); // FIX: Added /api prefix
+      queryClient.invalidateQueries({ queryKey: ["/api/groups"] }); // FIX: Added /api prefix
       toast({
         title: "Group created",
         description: "Your new group has been created successfully.",
@@ -143,6 +143,9 @@ export default function Groups() {
           <DialogContent className="sm:max-w-md" data-testid="modal-create-group">
             <DialogHeader>
               <DialogTitle>Create New Group</DialogTitle>
+              <DialogDescription>
+                Fill in the details to create a new group.
+              </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreateGroup} className="space-y-4">
               <div>

@@ -4,7 +4,7 @@ import { useAppContext } from "@/context/app-context";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -38,11 +38,11 @@ export default function Expenses() {
   const { toast } = useToast();
 
   const { data: users = [] } = useQuery<User[]>({
-    queryKey: ["/api/users"],
+    queryKey: ["/api/users"], // FIX: Added /api prefix
   });
 
   const { data: expenses = [] } = useQuery<Expense[]>({
-    queryKey: ["/api/groups", activeGroupId, "expenses"],
+    queryKey: ["/api/groups", activeGroupId, "expenses"], // FIX: Added /api prefix
     enabled: !!activeGroupId,
   });
 
@@ -72,15 +72,17 @@ export default function Expenses() {
 
   const updateExpenseMutation = useMutation({
     mutationFn: async (data: { id: string; description: string; amount: string; category: string }) => {
-      return apiRequest("PUT", `/api/expenses/${data.id}`, {
-        description: data.description,
-        amount: data.amount,
-        category: data.category,
-      });
+      return await apiRequest("PUT", `/api/expenses/${data.id}`,
+        {
+          description: data.description,
+          amount: data.amount,
+          category: data.category,
+        }
+      );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "expenses"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "balances"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "expenses"] }); // FIX: Added /api prefix
+      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "balances"] }); // FIX: Added /api prefix
       toast({
         title: "Success",
         description: "Expense updated successfully!",
@@ -98,11 +100,11 @@ export default function Expenses() {
 
   const deleteExpenseMutation = useMutation({
     mutationFn: async (expenseId: string) => {
-      return apiRequest("DELETE", `/api/expenses/${expenseId}`);
+      return await apiRequest("DELETE", `/api/expenses/${expenseId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "expenses"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "balances"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "expenses"] }); // FIX: Added /api prefix
+      queryClient.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "balances"] }); // FIX: Added /api prefix
       toast({
         title: "Success",
         description: "Expense deleted successfully!",
@@ -250,6 +252,9 @@ export default function Expenses() {
         <DialogContent data-testid="dialog-edit-expense">
           <DialogHeader>
             <DialogTitle>Edit Expense</DialogTitle>
+            <DialogDescription>
+              Update the details for your expense.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
