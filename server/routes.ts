@@ -314,10 +314,8 @@ export function registerRoutes(app: Express): void {
       }
 
       // Check if user can access this group's expenses
-      if (!req.ability!.can('read', {
-        groupId: req.params.groupId,
-        subject: 'Expense'
-      })) {
+      const user = req.user as AppUser;
+      if (user.role !== 'admin' && !group.participants.includes(user.id)) {
         return res.status(403).json({ message: "You don't have access to this group's expenses" });
       }
 
@@ -429,10 +427,8 @@ export function registerRoutes(app: Express): void {
       }
 
       // Check if user can access this group's settlements
-      if (!req.ability!.can('read', {
-        groupId: req.params.groupId,
-        subject: 'Settlement'
-      })) {
+      const user = req.user as AppUser;
+      if (user.role !== 'admin' && !group.participants.includes(user.id)) {
         return res.status(403).json({ message: "You don't have access to this group's settlements" });
       }
 
