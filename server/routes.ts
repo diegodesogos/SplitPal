@@ -509,6 +509,14 @@ export function registerRoutes(app: Express): void {
       res.status(500).json({ message: "Failed to calculate balances" });
     }
   });
+
+    // Health check route
+  app.get('/api/healthcheck', (req, res) => {
+    res.status(200).json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+    });
+  });
 }
 
 // Check for required environment variables
