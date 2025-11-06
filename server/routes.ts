@@ -524,3 +524,9 @@ if (!process.env.JWT_SECRET) {
   console.error('JWT_SECRET environment variable is not set. The application cannot start without it.');
   process.exit(1);
 }
+
+// Check for required environment variables
+if (!process.env.JWT_SECRET) {
+  console.error('JWT_SECRET environment variable is not set. The application cannot start without it.');
+  process.exit(1);
+}
