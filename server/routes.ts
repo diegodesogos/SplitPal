@@ -10,8 +10,9 @@ import {
   insertSettlementSchema,
   registerUserSchema,
   loginUserSchema
-} from "@shared/schema.js";
-import { useAuthorization, checkAbility, AppUser } from "./authorization.js";
+} from "@shared/schema"; // Removed .js extension
+
+import { useAuthorization, checkAbility, AppUser } from "./authorization";
 
 // --- Add this constant ---
 const FRONTEND_URL_DEF = process.env.FRONTEND_URL || 'http://localhost:3001';

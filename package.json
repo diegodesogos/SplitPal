@@ -15,7 +15,9 @@
     "check": "tsc --noEmit",
     "db:push": "drizzle-kit push",
     "test:server": "vitest --config ./server/vitest.config.ts --run",
-    "test:server:watch": "vitest --config ./server/vitest.config.ts"
+    "test:server:watch": "vitest --config ./server/vitest.config.ts",
+    "test:client": "vitest --config ./client/vitest.config.ts --run",
+    "test:client:watch": "vitest --config ./client/vitest.config.ts"
   },
   "dependencies": {
     "@casl/ability": "^6.7.3",
@@ -96,6 +98,9 @@
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.15",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/axios": "^0.9.36",
     "@types/bcrypt": "^6.0.0",
     "@types/connect-pg-simple": "^7.0.3",
@@ -114,12 +119,14 @@
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.5.13",
     "@vitejs/plugin-react": "^4.3.2",
+    "@vitest/coverage-v8": "^4.0.7",
     "autoprefixer": "^10.4.20",
     "concurrently": "^8.2.2",
     "cross-env": "^7.0.3",
     "dotenv": "^17.2.3",
     "drizzle-kit": "^0.31.4",
     "esbuild": "^0.25.0",
+    "jsdom": "^27.1.0",
     "postcss": "^8.4.47",
     "shx": "^0.3.4",
     "supertest": "^7.1.4",
