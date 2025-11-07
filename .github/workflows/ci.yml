@@ -1,0 +1,48 @@
+# .github/workflows/ci.yml
+
+# 1. A name for your workflow
+name: 'Run Vitest Tests'
+
+# 2. When to run this workflow
+on:
+  # Run on pull requests targeting your main branch
+  pull_request:
+    branches: [ main ] # Or 'master', whatever your main branch is
+  # Also run on direct pushes to main
+  push:
+    branches: [ main ]
+
+# 3. What jobs to run
+jobs:
+  # Define a single job named 'test'
+  test:
+    # A name for this job, shown on GitHub
+    name: 'Run Vitest'
+    # Use the latest Ubuntu (Linux) server
+    runs-on: ubuntu-latest
+
+    # The actual steps to perform
+    steps:
+      # Step 1: Get your code from GitHub onto the server
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Install Node.js and cache dependencies
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm' # Use built-in caching for npm
+
+      # Step 3: Install your project's dependencies
+      # 'ci' is faster and safer, and will use the cache if available
+      - name: Install dependencies
+        run: npm ci
+
+      # Step 4: Run server tests
+      - name: Run server tests
+        run: npm run test:server
+
+      # Step 5: Run client tests
+      - name: Run client tests
+        run: npm run test:client
