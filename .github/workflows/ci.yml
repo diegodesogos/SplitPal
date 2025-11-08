@@ -32,6 +32,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          npm-version: '11.6.2'
           cache: 'npm' # Use built-in caching for npm
 
       # Step 3: Install your project's dependencies
