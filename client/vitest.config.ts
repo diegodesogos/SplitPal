@@ -8,6 +8,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './client/src/test/setup.ts', // Updated path to setup file
+    include: ['client/src/**/*.test.ts', 'client/src/**/*.test.tsx'], // <-- ADD THIS LINE
   },
   resolve: {
     alias: {

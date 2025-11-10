@@ -10,14 +10,15 @@
     "build": "npm run build:client && npm run build:server",
     "build:client": "vite build",
     "build:server": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist/server",
-    "start": "cross-env NODE_ENV=production node dist/server/index.js",
+    "start": "cross-env NODE_ENV=production NODE_OPTIONS=\"-r dotenv/config\" node dist/server/index.js",
     "preview": "npm run build && npm run start",
     "check": "tsc --noEmit",
     "db:push": "drizzle-kit push",
     "test:server": "vitest --config ./server/vitest.config.ts --run",
     "test:server:watch": "vitest --config ./server/vitest.config.ts",
     "test:client": "vitest --config ./client/vitest.config.ts --run",
-    "test:client:watch": "vitest --config ./client/vitest.config.ts"
+    "test:client:watch": "vitest --config ./client/vitest.config.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@casl/ability": "^6.7.3",
@@ -97,6 +98,7 @@
     "zod-validation-error": "^3.4.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@tailwindcss/typography": "^0.5.15",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
@@ -136,7 +138,5 @@
     "vite": "^7.1.5",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^4.0.7"
-  },
-  "optionalDependencies": {
   }
 }
