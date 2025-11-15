@@ -16,6 +16,6 @@
       "@shared/*": ["shared/*"]
     }
   },
-  "include": ["server", "shared", "client"],
+  "include": ["server", "shared", "client", "tests"],
   "exclude": ["node_modules", "dist"]
 }

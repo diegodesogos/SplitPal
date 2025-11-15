@@ -10,8 +10,9 @@ import {
   insertSettlementSchema,
   registerUserSchema,
   loginUserSchema
-} from "@shared/schema.js";
-import { useAuthorization, checkAbility, AppUser } from "./authorization.js";
+} from "@shared/schema"; // Removed .js extension
+
+import { useAuthorization, checkAbility, AppUser } from "./authorization";
 
 // --- Add this constant ---
 const FRONTEND_URL_DEF = process.env.FRONTEND_URL || 'http://localhost:3001';
@@ -509,6 +510,20 @@ export function registerRoutes(app: Express): void {
       res.status(500).json({ message: "Failed to calculate balances" });
     }
   });
+
+    // Health check route
+  app.get('/api/healthcheck', (req, res) => {
+    res.status(200).json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+    });
+  });
+}
+
+// Check for required environment variables
+if (!process.env.JWT_SECRET) {
+  console.error('JWT_SECRET environment variable is not set. The application cannot start without it.');
+  process.exit(1);
 }
 
 // Check for required environment variables
